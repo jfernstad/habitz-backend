@@ -1,46 +1,19 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/jfernstad/habitz/web/cmd/backend/endpoints"
-	"github.com/jfernstad/habitz/web/internal/mock"
+	"github.com/jfernstad/habitz/web/internal/sqlite"
 )
-
-const createUserTable = `
-CREATE TABLE IF NOT EXISTS users(
-	name TEXT PRIMARY KEY
-);
-`
-
-const createHabitTemplateTable = `
-CREATE TABLE IF NOT EXISTS habit_template (
-	name TEXT,
-	weekday TEXT,
-	habit TEXT,
-	PRIMARY KEY (name, weekday, habit)
-) WITHOUT ROWID;
-`
-
-const createHistoryTable = `
-CREATE TABLE IF NOT EXISTS habit_history(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	name TEXT,
-	weekday TEXT,
-	date TEXT,
-	habit TEXT,
-	complete INTEGER,
-	complete_at TEXT
-);
-`
 
 func main() {
 
@@ -49,26 +22,11 @@ func main() {
 		dbFile = "habitz.sqlite"
 	}
 
-	db, err := sql.Open("sqlite3", dbFile)
+	db, err := sqlx.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	_, err = db.Exec(createUserTable)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(createHabitTemplateTable)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = db.Exec(createHistoryTable)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	cors := cors.New(cors.Options{
 		// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
@@ -81,7 +39,8 @@ func main() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	})
 
-	habitzService := &mock.HabitzService{}
+	// habitzService := &mock.HabitzService{}
+	habitzService := sqlite.NewHabitzService(db)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 
 	r := endpoints.NewRouter()

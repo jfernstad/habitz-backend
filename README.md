@@ -32,8 +32,8 @@ Composite key (`name`, `weekday`, `habit`)
 | `id`          | int      | Auto increasing id, PK       |
 | `name`        | string   | User name                    |
 | `weekday`     | string   | Performer of habit creation  |
-| `date`        | datetime | Habit for this specific date |
 | `habit`       | string   | Habit to create              |
+| `date`        | datetime | Habit for this specific date |
 | `complete`    | boolean  | Done or not                  |
 | `complete_at` | datetime | When it was completed        |
 
@@ -140,3 +140,13 @@ Incomplete updates are OK.
 | `/`      | GET  | HTML for todays habit history |
 | `/new`   | GET  | Form for new habit template   |
 
+
+# Test
+
+```
+curl localhost:3000/api/habitz/users
+curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
+curl localhost:3000/api/habitz/today
+curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
+curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
+```

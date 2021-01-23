@@ -138,7 +138,7 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 			}
 
 			for _, t := range templates {
-				entry, err := h.service.CreateHabitEntry(user, weekday, t.Habit, false)
+				entry, err := h.service.CreateHabitEntry(user, t.Weekday, t.Habit)
 				if err != nil {
 					return newInternalServerErr("could not create habit entry for today").Wrap(err)
 				}
