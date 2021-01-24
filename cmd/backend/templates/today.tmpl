@@ -11,7 +11,6 @@
     <title>Habitz</title>
     <meta name="description" content="Your daily Habit tracker">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="">
 
     <style>
         * {
@@ -141,6 +140,11 @@
             -ms-transform: rotate(45deg);
             transform: rotate(45deg);
         }
+
+        .nohabit{
+            text-align: center;
+        }
+        
         button {
             float: none;
             display: block;
@@ -152,35 +156,67 @@
             position: absolute;
             bottom: 0;
         }
-
     </style>
-
 </head>
-
 <body>
     <header>
         <div class="headline"> Habitz</div>
         <div class="date">{{ .Weekday }} {{ .Today }}</div>
     </header>
     <div class="row">
-    {{ range $idx, $user := .States }}
+        {{ range $idx, $user := .States }}
         <div class="column">
             <div class="user underline"> {{ $user.Name }} </div>
             <table>
                 {{ range $hIdx, $habit := $user.Habitz }}
                 <tr>
                     <label class="container habit">{{ $habit.Habit }}
-                        <input type="checkbox" {{ complete $habit.Complete }} id="{{ $habit.ID }}">
+                        <input type="checkbox" {{ complete $habit.Complete }} id="{{ $habit.ID }}"
+                            onchange="updateHabit('{{$user.Name}}',{{ $habit.ID }});">
                         <span class="checkmark"></span>
                     </label>
                 </tr>
+                {{else}}
+                <tr> <div class="habit nohabit">Day off today 🎉</div></tr>
                 {{ end }}
             </table>
         </div>
-    {{ end }}
+        {{ end }}
     </div>
-    <button>Add a new Habit!</a>
-    <script src="" async defer></script>
+    <button onclick="location.href='/new';">Add a new Habit!</button>
+
+    <script async defer>
+        function updateHabit(user, habit_id) {
+            var el = document.getElementById(habit_id);
+            console.log("tapped update status: ", habit_id, el.checked)
+
+            // Prepare body
+            body = [
+                {
+                    "user": user,
+                    "habitz": [
+                        {
+                            "id": habit_id,
+                            "complete": el.checked
+                        }
+                    ]
+                }
+            ]
+
+            // Prepare request
+            var request = new XMLHTTPRequest();
+            var url = "/api/habitz/today";
+
+            request.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log(this.responseText);
+                }
+            };
+            request.open("POST", url);
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.send(JSON.stringify(body));
+        }
+    </script>
 </body>
 
 </html>

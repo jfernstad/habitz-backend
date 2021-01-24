@@ -219,12 +219,16 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 
 func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.HabitEntry, error) {
 
-	sql, args, _ := sq.Update("habit_entries").
-		Set("complete", complete).
-		Set("complete_at", time.Now().UTC().Format(sqlTimeFormat)).
-		Where(sq.Eq{"id": id}).ToSql()
+	query := sq.Update("habit_entries").
+		Set("complete", complete)
 
-	log.Println(sql, args)
+	// Also update timestamp
+	if complete == true {
+		query = query.Set("complete_at", time.Now().UTC().Format(sqlTimeFormat))
+	}
+
+	sql, args, _ := query.
+		Where(sq.Eq{"id": id}).ToSql()
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return nil, err

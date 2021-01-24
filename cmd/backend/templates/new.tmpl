@@ -11,19 +11,10 @@
     <title>New Habit</title>
     <meta name="description" content="Create new Habit">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="">
+
     <style>
         * {
             box-sizing: border-box;
-        }
-
-        /* Create three equal columns that floats next to each other */
-        .column {
-            width: 33.33%;
-            float: left;
-            padding: 10px;
-            /* height: 300px; */
-            /* Should be removed. Only for demonstration */
         }
 
         .row {
@@ -150,36 +141,94 @@
                 <input type="checkbox" checked="checked" name="monday" id="monday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="tuesday" id="tuesday">tuesdays</input>
+            <label class="container">tuesdays
+                <input type="checkbox" checked="checked" name="tuesday" id="tuesday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="wednesday" id="wednesday">wednesdays</input>
+            <label class="container">wednesdays
+                <input type="checkbox" checked="checked" name="wednesday" id="wednesday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="thursday" id="thursday">thursdays</input>
+            <label class="container">thursdays
+                <input type="checkbox" checked="checked" name="thursday" id="thursday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="friday" id="friday">fridays</input>
+            <label class="container">fridays
+                <input type="checkbox" checked="checked" name="friday" id="friday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="saturday" id="saturday">saturdays</input>
+            <label class="container">saturdays
+                <input type="checkbox" checked="checked" name="saturday" id="saturday">
                 <span class="checkmark"></span>
             </label>
-            <label class="container">
-                <input type="checkbox" checked="checked" name="sunday" id="sunday">sundays</input>
+            <label class="container">sundays
+                <input type="checkbox" checked="checked" name="sunday" id="sunday">
                 <span class="checkmark"></span>
             </label>
         </div>
         <div class="row">
-            <button type="submit">Create new Habit!</button>
+            <button type="button" onclick="createHabit();return false;">Create new Habit!</button>
         </div>
     </form>
-    <script src="" async defer></script>
+    <script async defer>
+        function createHabit() {
+            // Validate form
+            user = document.getElementById('user').value;
+            habit = document.getElementById('habit').value;
+
+            if (user.length == 0 || habit.length == 0) {
+                console.log("bad input")
+                return
+            }
+
+            // Collect checked weekdays
+            weekdays = [
+                document.getElementById('monday').checked ? "monday" : "",
+                document.getElementById('tuesday').checked ? "tuesday" : "",
+                document.getElementById('wednesday').checked ? "wednesday" : "",
+                document.getElementById('thursday').checked ? "thursday" : "",
+                document.getElementById('friday').checked ? "friday" : "",
+                document.getElementById('saturday').checked ? "saturday" : "",
+                document.getElementById('sunday').checked ? "sunday" : ""
+            ]
+
+            // Remove unchecked days
+            for (var i = weekdays.length - 1; i >= 0; i--) {
+                if (weekdays[i].length == "") {
+                    weekdays.splice(i, 1);
+                }
+            }
+
+            // We need at least 1 day
+            if (weekdays.length == 0) {
+                console.log("weekdays empty")
+                return
+            }
+
+            // Prepare body
+            body = {
+                "name": user,
+                "habit": habit,
+                "weekdays": weekdays,
+            }
+
+            console.log("Body:", body)
+
+            // Prepare request
+            var request = new XMLHttpRequest();
+            var url = "/api/habitz/";
+
+            request.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 201) {
+                    console.log(this.responseText);
+                    document.location.href = "/";
+                }
+            };
+            request.open("POST", url);
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.send(JSON.stringify(body));
+        }
+    </script>
 </body>
 
 </html>

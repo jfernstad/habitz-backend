@@ -148,11 +148,14 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 				habitz = append(habitz, entry)
 			}
 		}
-		userHabitz := habitState{
-			Name:   user,
-			Habitz: habitz,
+
+		if len(habitz) > 0 {
+			userHabitz := habitState{
+				Name:   user,
+				Habitz: habitz,
+			}
+			response = append(response, userHabitz)
 		}
-		response = append(response, userHabitz)
 	}
 	writeJSON(w, http.StatusOK, &response)
 	return nil
