@@ -1,9 +1,13 @@
-# Habitz webapp
+# Habitz Tracker
+
+Simple webapp which allows you to setup and track your desired daily actions in order to make them a habit. 
+
+I use it with a eInk display (mobiscribe) and a Raspberry PI. 
 
 ## Technology
 
 - SQLite - database
-- Golang - backend
+- Golang - webservice
 - HTML/JS - frontend w/ golang templates
 
 ## Database
@@ -15,7 +19,6 @@
 | `name` | string | Performer of habit creation |
 
 ### Habit Template
-
 
 | Column    | Type   | comment                     |
 | --------- | ------ | --------------------------- |
@@ -33,8 +36,8 @@ Composite key (`name`, `weekday`, `habit`)
 | `name`        | string   | User name                    |
 | `weekday`     | string   | Performer of habit creation  |
 | `habit`       | string   | Habit to create              |
-| `date`        | datetime | Habit for this specific date |
 | `complete`    | boolean  | Done or not                  |
+| `date`        | string   | Habit for this specific date |
 | `complete_at` | datetime | When it was completed        |
 
 ## Webservice API
@@ -151,6 +154,5 @@ curl -X POST -d '{"name":"John Doh", "weekdays":["monday","tuesday","wednedsday"
 curl localhost:3000/api/habitz/users
 curl localhost:3000/api/habitz/today
 curl -X POST -d '[{"user": "John Doh", "habitz": [{"id": 1, "complete": true}]}]' localhost:3000/api/habitz/today
-
 
 ```
