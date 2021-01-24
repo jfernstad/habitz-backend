@@ -32,15 +32,8 @@ func (ww *www) Routes() chi.Router {
 
 func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 
-	fm := template.FuncMap{"complete": func(taskComplete bool) string {
-		if taskComplete {
-			return "checked"
-		}
-		return ""
-	}}
-
 	// Load the template
-	htmlTemplate, err := template.New("today.tmpl").Funcs(fm).ParseFiles("./cmd/backend/templates/today.tmpl")
+	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/today.tmpl")
 	if err != nil {
 		return newInternalServerErr("could not create template").Wrap(err)
 	}

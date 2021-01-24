@@ -82,10 +82,18 @@ func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) err
 		}
 	}
 
+	thisWeekday := internal.Weekday()
+
 	// Create Habit template
 	for _, weekday := range ht.Weekdays {
 		if err := h.service.CreateTemplate(ht.Name, weekday, ht.Habit); err != nil {
 			return newInternalServerErr("could not create template").Wrap(err)
+		}
+
+		// If we're adding a habit for today, make sure we use it today!
+		if weekday == thisWeekday {
+			// Ignore this error, less important
+			h.service.CreateHabitEntry(ht.Name, weekday, ht.Habit)
 		}
 	}
 

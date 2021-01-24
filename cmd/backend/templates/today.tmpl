@@ -171,8 +171,13 @@
                 {{ range $hIdx, $habit := $user.Habitz }}
                 <tr>
                     <label class="container habit">{{ $habit.Habit }}
-                        <input type="checkbox" {{ complete $habit.Complete }} id="{{ $habit.ID }}"
+                    {{if $habit.Complete}}
+                        <input type="checkbox" id="{{ $habit.ID }}" checked
                             onchange="updateHabit('{{$user.Name}}',{{ $habit.ID }});">
+                    {{else}}
+                        <input type="checkbox" id="{{ $habit.ID }}"
+                            onchange="updateHabit('{{$user.Name}}',{{ $habit.ID }});">
+                    {{end}}
                         <span class="checkmark"></span>
                     </label>
                 </tr>
@@ -204,7 +209,7 @@
             ]
 
             // Prepare request
-            var request = new XMLHTTPRequest();
+            var request = new XMLHttpRequest();
             var url = "/api/habitz/today";
 
             request.onreadystatechange = function () {
