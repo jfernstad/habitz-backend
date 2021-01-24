@@ -1,8 +1,6 @@
 package mock
 
 import (
-	"time"
-
 	"github.com/jfernstad/habitz/web/internal"
 )
 
@@ -15,7 +13,7 @@ func (m *HabitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 }
 func (m *HabitzService) CreateTemplate(user, weekday, habit string) error { return nil }
 func (m *HabitzService) RemoveTemplate(user, weekday, habit string) error { return nil }
-func (m *HabitzService) HabitEntries(user string, date time.Time) ([]*internal.HabitEntry, error) {
+func (m *HabitzService) HabitEntries(user string, date string) ([]*internal.HabitEntry, error) {
 	return nil, nil
 }
 func (m *HabitzService) CreateHabitEntry(user, weekday, habit string) (*internal.HabitEntry, error) {

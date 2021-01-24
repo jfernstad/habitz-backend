@@ -144,9 +144,13 @@ Incomplete updates are OK.
 # Test
 
 ```
+curl -X POST -d '{"name":"John Doh", "weekdays":["monday","tuesday","saturday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
+curl -X POST -d '{"name":"John Doh", "weekdays":["saturday","sunday"], "habit":"Sleep 10 hours"}' localhost:3000/api/habitz/
+curl -X POST -d '{"name":"John Doh", "weekdays":["monday","tuesday","wednedsday","thursday","friday"], "habit":"Drink tea"}' localhost:3000/api/habitz/
+curl -X POST -d '{"name":"John Doh", "weekdays":["monday","tuesday","wednedsday","thursday","friday"], "habit":"Hug wife"}' localhost:3000/api/habitz/
 curl localhost:3000/api/habitz/users
-curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
 curl localhost:3000/api/habitz/today
-curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
-curl -X POST -d '{"name":"carl", "weekdays":["monday","tuesday"], "habit":"Eat 1000kcal"}' localhost:3000/api/habitz/
+curl -X POST -d '[{"user": "John Doh", "habitz": [{"id": 1, "complete": true}]}]' localhost:3000/api/habitz/today
+
+
 ```

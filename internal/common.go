@@ -1,11 +1,14 @@
 package internal
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
-func Today() time.Time {
-	return time.Now().UTC().Truncate(24 * time.Hour) // UTC midnight
+func Today() string {
+	return time.Now().UTC().Truncate(24 * time.Hour).Format("2006-01-02")
 }
 
 func Weekday() string {
-	return Today().Weekday().String()
+	return strings.ToLower(time.Now().UTC().Truncate(24 * time.Hour).Weekday().String())
 }

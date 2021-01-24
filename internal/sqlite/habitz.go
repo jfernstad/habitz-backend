@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users(
 `
 
 const createHabitTemplateTable = `
-CREATE TABLE IF NOT EXISTS habit_template (
+CREATE TABLE IF NOT EXISTS habit_templates (
 	name TEXT,
 	weekday TEXT,
 	habit TEXT,
@@ -27,18 +27,18 @@ CREATE TABLE IF NOT EXISTS habit_template (
 `
 
 const createEntryTable = `
-CREATE TABLE IF NOT EXISTS habit_entry(
+CREATE TABLE IF NOT EXISTS habit_entries(
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name TEXT,
 	weekday TEXT,
 	date TEXT,
 	habit TEXT,
 	complete INTEGER,
-	complete_at TEXT
+	complete_at TIMESTAMP
 );
 `
 
-const sqliteTimeFormat = "2006-01-02T15:04:05.999999999"
+const sqlTimeFormat = "2006-01-02 15:04:05"
 
 type habitzService struct {
 	db *sqlx.DB
@@ -116,8 +116,12 @@ func (m *habitzService) CreateUser(name string) error {
 }
 
 func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTemplate, error) {
-	sql, _, _ := sq.Select("name", "weekday", "habit").From("habit_template").ToSql()
-	rows, err := m.db.Queryx(sql)
+	sql, args, _ := sq.Select("name", "weekday", "habit").
+		From("habit_templates").
+		Where(sq.Eq{"name": user, "weekday": weekday}).
+		ToSql()
+
+	rows, err := m.db.Queryx(sql, args...)
 
 	if err != nil {
 		return nil, err
@@ -125,7 +129,6 @@ func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 	defer rows.Close()
 
 	userTemplates := []*internal.HabitTemplate{}
-
 	for rows.Next() {
 		var tmpl internal.HabitTemplate
 
@@ -143,7 +146,7 @@ func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 }
 
 func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
-	sql, args, _ := sq.Insert("habit_template").
+	sql, args, _ := sq.Insert("habit_templates").
 		Columns("name", "weekday", "habit").Values(user, weekday, habit).
 		ToSql()
 
@@ -155,16 +158,44 @@ func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
 }
 
 func (m *habitzService) RemoveTemplate(user, weekday, habit string) error { return nil }
-func (m *habitzService) HabitEntries(user string, date time.Time) ([]*internal.HabitEntry, error) {
-	return nil, nil
+func (m *habitzService) HabitEntries(user string, date string) ([]*internal.HabitEntry, error) {
+	sql, args, _ := sq.Select("*").
+		From("habit_entries").
+		Where(sq.Eq{"name": user, "date": date}).
+		ToSql()
+
+	rows, err := m.db.Queryx(sql, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	habitEntries := []*internal.HabitEntry{}
+
+	for rows.Next() {
+		var entry internal.HabitEntry
+
+		if err = rows.StructScan(&entry); err != nil {
+			return nil, err
+		}
+		habitEntries = append(habitEntries, &entry)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return habitEntries, nil
 }
+
 func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal.HabitEntry, error) {
 
 	today := internal.Today()
 
-	sql, args, _ := sq.Insert("habit_entry").
+	sql, args, _ := sq.Insert("habit_entries").
 		Columns("name", "weekday", "habit", "date", "complete").
-		Values(user, weekday, habit, today.Format(sqliteTimeFormat), 0).
+		Values(user, weekday, habit, today, 0).
 		ToSql()
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
@@ -175,17 +206,41 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 	entry := internal.HabitEntry{}
 
 	sql, _, _ = sq.Select("*").
-		From("habit_entry").
+		From("habit_entries").
 		OrderBy("id desc").
 		Limit(1).ToSql()
 
 	if err := m.db.QueryRowx(sql).StructScan(&entry); err != nil {
 		return nil, err
 	}
-	log.Println(entry)
 
 	return &entry, nil
 }
+
 func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.HabitEntry, error) {
-	return nil, nil
+
+	sql, args, _ := sq.Update("habit_entries").
+		Set("complete", complete).
+		Set("complete_at", time.Now().UTC().Format(sqlTimeFormat)).
+		Where(sq.Eq{"id": id}).ToSql()
+
+	log.Println(sql, args)
+
+	if _, err := m.db.Exec(sql, args...); err != nil {
+		return nil, err
+	}
+
+	// Retrieve full object
+	sql, args, _ = sq.Select("*").
+		From("habit_entries").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+
+	entry := internal.HabitEntry{}
+
+	if err := m.db.QueryRowx(sql, args...).StructScan(&entry); err != nil {
+		return nil, err
+	}
+
+	return &entry, nil
 }

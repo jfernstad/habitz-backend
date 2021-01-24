@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -20,14 +21,14 @@ func NewHabitzEndpoint(hs internal.HabitzServicer) EndpointRouter {
 }
 
 type incomingHabitTemplate struct {
-	Name     string
-	Habit    string
-	Weekdays []string
+	Name     string   `json:"name"`
+	Habit    string   `json:"habit"`
+	Weekdays []string `json:"weekdays"`
 }
 
 type habitState struct {
-	Name   string
-	Habitz []*internal.HabitEntry
+	Name   string                 `json:"name"`
+	Habitz []*internal.HabitEntry `json:"habitz"`
 }
 
 func (h *habitz) Routes() chi.Router {
@@ -131,6 +132,8 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 
 		// Todays entries might not have been created yet, lets create them
 		if len(habitz) == 0 {
+			log.Println("No entries for today, lets create them")
+
 			habitz = []*internal.HabitEntry{}
 			templates, err := h.service.Templates(user, weekday)
 			if err != nil {

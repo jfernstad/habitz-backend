@@ -1,7 +1,5 @@
 package internal
 
-import "time"
-
 type Services struct {
 	HabitzService HabitzServicer
 }
@@ -14,7 +12,7 @@ type HabitzServicer interface {
 	CreateTemplate(user, weekday, habit string) error
 	RemoveTemplate(user, weekday, habit string) error
 
-	HabitEntries(user string, date time.Time) ([]*HabitEntry, error)
+	HabitEntries(user string, date string) ([]*HabitEntry, error)
 	CreateHabitEntry(user, weekday, habit string) (*HabitEntry, error)
 	UpdateHabitEntry(id int, complete bool) (*HabitEntry, error)
 }
