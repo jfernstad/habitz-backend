@@ -42,12 +42,18 @@ func main() {
 	// habitzService := &mock.HabitzService{}
 	habitzService := sqlite.NewHabitzService(db)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
+	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
 
 	r := endpoints.NewRouter()
 
 	r.Route("/api/habitz", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", habitzEndpoint.Routes())
+	})
+
+	r.Route("/", func(v chi.Router) {
+		v.Use(cors.Handler)
+		v.Mount("/", wwwEndpoint.Routes())
 	})
 
 	log.Println("HTTP routes:")

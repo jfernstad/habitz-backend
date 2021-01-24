@@ -3,6 +3,7 @@ package endpoints
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -104,6 +105,22 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 		// It's too late to tell the client--we already sent the status code.
 		// The best we can do is log the error.
 		log.Println("json encode error: ", err)
+	}
+}
+
+func writeHTML(w http.ResponseWriter, status int, htmlTemplate *template.Template, content interface{}) {
+	w.Header().Set("content-type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+
+	// Don't encode any response on this status
+	if status == http.StatusNoContent {
+		return
+	}
+
+	if err := htmlTemplate.Execute(w, content); err != nil {
+		// It's too late to tell the client--we already sent the status code.
+		// The best we can do is log the error.
+		log.Println("html encode error: ", err)
 	}
 }
 
