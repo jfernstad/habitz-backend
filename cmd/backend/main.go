@@ -55,6 +55,8 @@ func main() {
 		v.Use(cors.Handler)
 		v.Mount("/", wwwEndpoint.Routes())
 	})
+	// Ignore this request from browsers
+	r.Get("/favicon.ico", func(rw http.ResponseWriter, r *http.Request) {})
 
 	log.Println("HTTP routes:")
 	printRoutes(r)

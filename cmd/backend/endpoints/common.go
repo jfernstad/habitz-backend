@@ -17,7 +17,7 @@ type EndpointRouter interface {
 
 // DefaultNotFoundHandler always responds with a generic 404 error.
 func DefaultNotFoundHandler(w http.ResponseWriter, req *http.Request) error {
-	return ErrHandlerNotFound
+	return newNotFoundErr(fmt.Sprintf("handler not found: %s", req.RequestURI))
 }
 
 // DefaultMethodNotAllowedHandler always responds with a generic 405 error.
