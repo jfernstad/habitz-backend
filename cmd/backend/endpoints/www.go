@@ -3,6 +3,7 @@ package endpoints
 import (
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jfernstad/habitz/web/internal"
@@ -65,6 +66,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		Width   float32
 		Today   string
 		Weekday string
+		Updated string
 		States  []*habitState
 	}
 
@@ -72,6 +74,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		Width:   100.0 / float32(len(allHabitz)),
 		Today:   internal.Today(),
 		Weekday: internal.Weekday(),
+		Updated: time.Now().Format("15:04:05"), // Update time
 		States:  allHabitz,
 	}
 	// Load the data into the template

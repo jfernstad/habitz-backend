@@ -56,6 +56,13 @@
             font-family: Roboto;
         }
 
+        .updated {
+            font-size: 9px;
+            /* width: 100%; */
+            text-align: right;
+            font-family: Roboto;
+        }
+
         .user {
             font-size: 48px;
             width: 100%;
@@ -141,10 +148,10 @@
             transform: rotate(45deg);
         }
 
-        .nohabit{
+        .nohabit {
             text-align: center;
         }
-        
+
         button {
             float: none;
             display: block;
@@ -158,10 +165,12 @@
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="headline"> Habitz</div>
-        <div class="date">{{ .Weekday }} {{ .Today }}</div>
+        <div class="date">{{ .Weekday }} {{ .Today }}<div class="updated">{{ .Updated }}</div>
+        </div>
     </header>
     <div class="row">
         {{ range $idx, $user := .States }}
@@ -221,6 +230,11 @@
             request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             request.send(JSON.stringify(body));
         }
+        // Reload to get new data
+        setTimeout(function () {
+            location.reload();
+        }, 6 * 3600 * 1000); // Every 6 hours
+        openFullscreen();
     </script>
 </body>
 
