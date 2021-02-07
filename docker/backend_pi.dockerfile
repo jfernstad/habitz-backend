@@ -7,7 +7,7 @@ ADD ./internal ./internal
 ADD ./cmd/backend ./cmd/backend
 ADD ./vendor ./vendor
 
-RUN CGO_ENABLED=1 GOOS=linux GOARH=arm64 go build -ldflags '-extldflags "-static"' -a -installsuffix cgo -o app github.com/jfernstad/habitz/web/cmd/backend
+RUN CGO_ENABLED=1 GOOS=linux GOARH=arm64 go build -ldflags -a -installsuffix cgo -o app github.com/jfernstad/habitz/web/cmd/backend
 
 #FROM alpine:latest
 FROM arm64v8/alpine:3.13
