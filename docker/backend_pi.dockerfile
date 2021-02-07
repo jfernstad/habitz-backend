@@ -22,4 +22,4 @@ COPY --from=builder /go/src/github.com/jfernstad/habitz/web/app .
 ENV SQLITE_DB data/habitz.sqlite
 CMD ["./app"]
 
-# docker start -p 3000:3000 -v ${PWD}:/root/data habitz:latest
+# docker run -p 3000:3000 -v ${PWD}:/root/data -d habitz:latest
