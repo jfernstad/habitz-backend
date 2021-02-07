@@ -1,7 +1,9 @@
 package sqlite
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -41,12 +43,14 @@ CREATE TABLE IF NOT EXISTS habit_entries(
 const sqlTimeFormat = "2006-01-02 15:04:05"
 
 type habitzService struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	debug bool
 }
 
-func NewHabitzService(db *sqlx.DB) internal.HabitzServicer {
+func NewHabitzService(db *sqlx.DB, debug bool) internal.HabitzServicer {
 	hs := &habitzService{
-		db: db,
+		db:    db,
+		debug: debug,
 	}
 
 	if err := hs.initSQLDatabase(); err != nil {
@@ -75,8 +79,17 @@ func (m *habitzService) initSQLDatabase() error {
 	return nil
 }
 
+func (m *habitzService) log(msg string) {
+	if m.debug {
+		log.Println("sql: " + msg)
+	}
+}
+
 func (m *habitzService) Users() ([]string, error) {
 	sql, _, _ := sq.Select("*").From("users").ToSql()
+
+	m.log("Users: " + sql)
+
 	rows, err := m.db.Query(sql)
 
 	if err != nil {
@@ -92,6 +105,7 @@ func (m *habitzService) Users() ([]string, error) {
 		if err = rows.Scan(&name); err != nil {
 			return nil, err
 		}
+		m.log(" - " + name)
 		users = append(users, name)
 	}
 
@@ -108,6 +122,8 @@ func (m *habitzService) CreateUser(name string) error {
 		Columns("name").Values(name).
 		ToSql()
 
+	m.log("CreateUser: " + sql + " >>  " + name)
+
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return err
 	}
@@ -120,6 +136,8 @@ func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 		From("habit_templates").
 		Where(sq.Eq{"name": user, "weekday": weekday}).
 		ToSql()
+
+	m.log("Templates: " + sql + " >> " + user + ", " + weekday)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -135,6 +153,8 @@ func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 		if err = rows.StructScan(&tmpl); err != nil {
 			return nil, err
 		}
+		m.log(fmt.Sprintf(" - %+v", tmpl))
+
 		userTemplates = append(userTemplates, &tmpl)
 	}
 
@@ -150,6 +170,8 @@ func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
 		Columns("name", "weekday", "habit").Values(user, weekday, habit).
 		ToSql()
 
+	m.log("CreateTemplate: " + sql + " >> " + user + ", " + weekday + ", " + habit)
+
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return err
 	}
@@ -163,6 +185,8 @@ func (m *habitzService) HabitEntries(user string, date string) ([]*internal.Habi
 		From("habit_entries").
 		Where(sq.Eq{"name": user, "date": date}).
 		ToSql()
+
+	m.log("HabitEntries: " + sql + " >> " + user + ", " + date)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -179,6 +203,9 @@ func (m *habitzService) HabitEntries(user string, date string) ([]*internal.Habi
 		if err = rows.StructScan(&entry); err != nil {
 			return nil, err
 		}
+
+		m.log(fmt.Sprintf(" - %+v", entry))
+
 		habitEntries = append(habitEntries, &entry)
 	}
 
@@ -198,6 +225,8 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 		Values(user, weekday, habit, today, 0).
 		ToSql()
 
+	m.log("CreateHabitEntry:" + " >> " + user + ", " + weekday + ", " + habit)
+
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return nil, err
 	}
@@ -213,6 +242,8 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 	if err := m.db.QueryRowx(sql).StructScan(&entry); err != nil {
 		return nil, err
 	}
+
+	m.log(fmt.Sprintf(" - %+v", entry))
 
 	return &entry, nil
 }
@@ -230,6 +261,8 @@ func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.Habit
 	sql, args, _ := query.
 		Where(sq.Eq{"id": id}).ToSql()
 
+	m.log("UpdateHabitEntry: " + sql + " >> " + strconv.FormatInt(int64(id), 10) + ", " + strconv.FormatBool(complete))
+
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return nil, err
 	}
@@ -245,6 +278,8 @@ func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.Habit
 	if err := m.db.QueryRowx(sql, args...).StructScan(&entry); err != nil {
 		return nil, err
 	}
+
+	m.log(fmt.Sprintf(" - %+v", entry))
 
 	return &entry, nil
 }

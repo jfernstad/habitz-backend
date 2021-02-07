@@ -74,7 +74,7 @@ func (h WebserviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				msg = newInternalServerErr("internal error").Wrap(err)
 			}
 		}
-		fmt.Println(msg)
+		log.Println(msg)
 
 		rsp := struct {
 			errMsg

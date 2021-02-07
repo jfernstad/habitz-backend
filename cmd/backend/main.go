@@ -10,6 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jfernstad/habitz/web/cmd/backend/endpoints"
 	"github.com/jfernstad/habitz/web/internal/sqlite"
@@ -40,11 +41,13 @@ func main() {
 	})
 
 	// habitzService := &mock.HabitzService{}
-	habitzService := sqlite.NewHabitzService(db)
+	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
 
 	r := endpoints.NewRouter()
+
+	r.Use(middleware.Logger)
 
 	r.Route("/api/habitz", func(v chi.Router) {
 		v.Use(cors.Handler)
