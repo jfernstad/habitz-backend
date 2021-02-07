@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 	"time"
 
@@ -47,6 +48,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 
 	// What day is it?
 	today := internal.Today()
+	weekday := internal.Weekday()
 	allHabitz := []*habitState{}
 
 	// Try to retrive todays habitz for all users
@@ -55,6 +57,25 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			return newInternalServerErr("could not load habitz for today").Wrap(err)
 		}
+		// Todays entries might not have been created yet, lets create them
+		if len(habitz) == 0 {
+			log.Println("No entries for today, lets create them")
+
+			habitz = []*internal.HabitEntry{}
+			templates, err := ww.service.Templates(user, weekday)
+			if err != nil {
+				return newInternalServerErr("could not load templates for today").Wrap(err)
+			}
+
+			for _, t := range templates {
+				entry, err := ww.service.CreateHabitEntry(user, t.Weekday, t.Habit)
+				if err != nil {
+					return newInternalServerErr("could not create habit entry for today").Wrap(err)
+				}
+				habitz = append(habitz, entry)
+			}
+		}
+
 		userHabitz := &habitState{
 			Name:   user,
 			Habitz: habitz,
