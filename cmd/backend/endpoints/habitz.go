@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jfernstad/habitz/web/internal"
@@ -18,12 +19,6 @@ func NewHabitzEndpoint(hs internal.HabitzServicer) EndpointRouter {
 	return &habitz{
 		service: hs,
 	}
-}
-
-type incomingHabitTemplate struct {
-	Name     string   `json:"name"`
-	Habit    string   `json:"habit"`
-	Weekdays []string `json:"weekdays"`
 }
 
 type habitState struct {
@@ -56,7 +51,7 @@ func (h *habitz) loadUsers(w http.ResponseWriter, r *http.Request) error {
 
 func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) error {
 
-	ht := incomingHabitTemplate{}
+	ht := internal.WeekHabitTemplates{}
 	if err := json.NewDecoder(r.Body).Decode(&ht); err != nil {
 		return newBadRequestErr("invalid input").Wrap(err)
 	}
@@ -103,15 +98,21 @@ func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) err
 
 func (h *habitz) deleteHabit(w http.ResponseWriter, r *http.Request) error {
 
-	ht := incomingHabitTemplate{}
+	ht := internal.WeekdayHabitTemplate{}
 	if err := json.NewDecoder(r.Body).Decode(&ht); err != nil {
 		return newBadRequestErr("invalid input").Wrap(err)
 	}
 
-	for _, weekday := range ht.Weekdays {
-		if err := h.service.RemoveTemplate(ht.Name, weekday, ht.Habit); err != nil {
-			return newInternalServerErr("could not remove template").Wrap(err)
-		}
+	if err := h.service.RemoveTemplate(ht.Name, ht.Weekday, ht.Habit); err != nil {
+		return newInternalServerErr("could not remove template").Wrap(err)
+	}
+
+	weekday := internal.Weekday()
+
+	// If we're removing todays Habit
+	// Also delete todays entry
+	if weekday == ht.Weekday {
+		h.service.RemoveEntry(ht.Name, ht.Habit, time.Now())
 	}
 
 	writeJSON(w, http.StatusOK, nil)
@@ -143,7 +144,7 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 			log.Println("No entries for today, lets create them")
 
 			habitz = []*internal.HabitEntry{}
-			templates, err := h.service.Templates(user, weekday)
+			templates, err := h.service.WeekdayTemplates(user, weekday)
 			if err != nil {
 				return newInternalServerErr("could not load templates for today").Wrap(err)
 			}

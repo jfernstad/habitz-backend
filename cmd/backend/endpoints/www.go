@@ -27,6 +27,7 @@ func (ww *www) Routes() chi.Router {
 	router.Route("/", func(r chi.Router) {
 		r.Get("/", ErrorHandler(ww.todaysHabitz))
 		r.Get("/new", ErrorHandler(ww.newHabit))
+		r.Get("/update/{user}", ErrorHandler(ww.updateHabit))
 	})
 
 	return router
@@ -62,7 +63,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 			log.Println("No entries for today, lets create them")
 
 			habitz = []*internal.HabitEntry{}
-			templates, err := ww.service.Templates(user, weekday)
+			templates, err := ww.service.WeekdayTemplates(user, weekday)
 			if err != nil {
 				return newInternalServerErr("could not load templates for today").Wrap(err)
 			}
@@ -111,5 +112,63 @@ func (ww *www) newHabit(w http.ResponseWriter, r *http.Request) error {
 		return newInternalServerErr("could not create template").Wrap(err)
 	}
 	writeHTML(w, http.StatusOK, htmlTemplate, nil)
+	return nil
+}
+
+func (ww *www) updateHabit(w http.ResponseWriter, r *http.Request) error {
+	user := chi.URLParam(r, "user")
+
+	if user == "" {
+		return newBadRequestErr("missing user")
+	}
+
+	// Load the template
+	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/schedule.tmpl")
+	if err != nil {
+		return newInternalServerErr("could not create template").Wrap(err)
+	}
+
+	userHabitz, err := ww.service.Templates(user)
+
+	type wd struct {
+		Name    string
+		Enabled bool
+	}
+	type habit struct {
+		Name     string
+		Habit    string
+		Weekdays []*wd
+	}
+	type stateRender struct {
+		Habitz []*habit
+	}
+
+	// Convenience
+	dayEnabled := func(day string, days []string) bool {
+		for _, d := range days {
+			if d == day {
+				return true
+			}
+		}
+		return false
+	}
+
+	weekdays := []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+	state := []*habit{}
+	for _, uh := range userHabitz {
+		s := habit{
+			Name:     user,
+			Habit:    uh.Habit,
+			Weekdays: make([]*wd, 7),
+		}
+
+		// Mark which days this habit is enabled
+		for idx, day := range weekdays {
+			s.Weekdays[idx] = &wd{Name: day, Enabled: dayEnabled(day, uh.Weekdays)}
+		}
+		state = append(state, &s)
+	}
+
+	writeHTML(w, http.StatusOK, htmlTemplate, state)
 	return nil
 }

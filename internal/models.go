@@ -4,10 +4,16 @@ import (
 	"time"
 )
 
-type HabitTemplate struct {
+type WeekdayHabitTemplate struct {
 	Name    string `json:"name" db:"name"`
 	Weekday string `json:"weekday" db:"weekday"`
 	Habit   string `json:"habit" db:"habit"`
+}
+
+type WeekHabitTemplates struct {
+	Name     string   `json:"name" db:"name"`
+	Weekdays []string `json:"weekdays" db:"weekdays"`
+	Habit    string   `json:"habit" db:"habit"`
 }
 
 type HabitEntry struct {

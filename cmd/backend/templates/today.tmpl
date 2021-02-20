@@ -17,6 +17,10 @@
             box-sizing: border-box;
         }
 
+        a:link {
+           text-decoration: none;
+        }
+
         /* Create three equal columns that floats next to each other */
         .column {
             width: {{ .Width }}%;
@@ -175,7 +179,7 @@
     <div class="row">
         {{ range $idx, $user := .States }}
         <div class="column">
-            <div class="user underline"> {{ $user.Name }} </div>
+            <div class="user underline"> <a href="/update/{{ $user.Name }}">{{ $user.Name }}</a> </div>
             <table>
                 {{ range $hIdx, $habit := $user.Habitz }}
                 <tr>
@@ -233,7 +237,7 @@
         // Reload to get new data
         setTimeout(function () {
             location.reload();
-        }, 6 * 3600 * 1000); // Every 6 hours
+        }, 1800 * 1000); // Every 30 mins
         openFullscreen();
     </script>
 </body>

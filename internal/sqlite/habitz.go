@@ -131,13 +131,14 @@ func (m *habitzService) CreateUser(name string) error {
 	return nil
 }
 
-func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTemplate, error) {
+func (m *habitzService) Templates(user string) ([]*internal.WeekHabitTemplates, error) {
 	sql, args, _ := sq.Select("name", "weekday", "habit").
 		From("habit_templates").
-		Where(sq.Eq{"name": user, "weekday": weekday}).
+		Where(sq.Eq{"name": user}).
+		Suffix("COLLATE NOCASE").
 		ToSql()
 
-	m.log("Templates: " + sql + " >> " + user + ", " + weekday)
+	m.log("Templates: " + sql + " >> " + user)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -146,9 +147,60 @@ func (m *habitzService) Templates(user, weekday string) ([]*internal.HabitTempla
 	}
 	defer rows.Close()
 
-	userTemplates := []*internal.HabitTemplate{}
+	userTemplates := []*internal.WeekHabitTemplates{}
 	for rows.Next() {
-		var tmpl internal.HabitTemplate
+		var tmpl internal.WeekdayHabitTemplate
+		var weekTmpl internal.WeekHabitTemplates
+
+		if err = rows.StructScan(&tmpl); err != nil {
+			return nil, err
+		}
+		m.log(fmt.Sprintf(" - %+v", tmpl))
+
+		exist := false
+		for _, ut := range userTemplates {
+			if ut.Habit == tmpl.Habit { // Already in array, append weekday
+				ut.Weekdays = append(ut.Weekdays, tmpl.Weekday)
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			weekTmpl.Name = tmpl.Name
+			weekTmpl.Habit = tmpl.Habit
+			weekTmpl.Weekdays = []string{tmpl.Weekday}
+			userTemplates = append(userTemplates, &weekTmpl)
+			continue
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return userTemplates, nil
+
+}
+
+func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*internal.WeekdayHabitTemplate, error) {
+	sql, args, _ := sq.Select("name", "weekday", "habit").
+		From("habit_templates").
+		Where(sq.Eq{"name": user, "weekday": weekday}).
+		ToSql()
+
+	m.log("WeekdayTemplates: " + sql + " >> " + user + ", " + weekday)
+
+	rows, err := m.db.Queryx(sql, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	userTemplates := []*internal.WeekdayHabitTemplate{}
+	for rows.Next() {
+		var tmpl internal.WeekdayHabitTemplate
 
 		if err = rows.StructScan(&tmpl); err != nil {
 			return nil, err
@@ -179,7 +231,35 @@ func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
 	return nil
 }
 
-func (m *habitzService) RemoveTemplate(user, weekday, habit string) error { return nil }
+func (m *habitzService) RemoveTemplate(user, weekday, habit string) error {
+	sql, args, _ := sq.Delete("habit_templates").
+		Where(sq.Eq{"name": user, "weekday": weekday, "habit": habit}).
+		ToSql()
+
+	m.log("RemoveTemplate: " + sql + " >> " + user + ", " + weekday + ", " + habit)
+
+	if _, err := m.db.Exec(sql, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *habitzService) RemoveEntry(user, habit string, date time.Time) error {
+	shortDate := internal.ShortDate(date)
+	sql, args, _ := sq.Delete("habit_entries").
+		Where(sq.Eq{"name": user, "date": shortDate, "habit": habit}).
+		ToSql()
+
+	m.log("RemoveEntry: " + sql + " >> " + user + ", " + shortDate + ", " + habit)
+
+	if _, err := m.db.Exec(sql, args...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *habitzService) HabitEntries(user string, date string) ([]*internal.HabitEntry, error) {
 	sql, args, _ := sq.Select("*").
 		From("habit_entries").
