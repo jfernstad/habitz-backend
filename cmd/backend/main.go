@@ -18,6 +18,17 @@ import (
 
 func main() {
 
+	// Read configuration from environment
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		googleClientID = "216495932865-4c559i17qgkvirqerca8uga7s9pi700f.apps.googleusercontent.com"
+	}
+
+	jwtSigningKey := os.Getenv("JWT_SIGNING_KEY")
+	if jwtSigningKey == "" {
+		jwtSigningKey = "THIS_IS_ONLY_A_DEMO_KEY_NOT_REAL"
+	}
+
 	dbFile := os.Getenv("SQLITE_DB")
 	if dbFile == "" {
 		dbFile = "habitz.sqlite"
@@ -44,7 +55,7 @@ func main() {
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
-	authEndpoint := endpoints.NewAuthEndpoint(habitzService)
+	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtSigningKey, googleClientID)
 
 	r := endpoints.NewRouter()
 

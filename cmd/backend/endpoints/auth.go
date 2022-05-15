@@ -15,7 +15,10 @@ import (
 
 type authEndpoint struct {
 	DefaultEndpoint
-	service internal.HabitzServicer
+	service           internal.HabitzServicer
+	jwtSigningSecret  []byte
+	jwtAudience       string
+	cachedGoogleCerts map[string]string
 }
 
 type googleClaims struct {
@@ -33,9 +36,12 @@ type HabitzJWTClaims struct {
 	UserID   string `json:"user_id"`
 }
 
-func NewAuthEndpoint(hs internal.HabitzServicer) EndpointRouter {
+func NewAuthEndpoint(hs internal.HabitzServicer, jwtSigningSecret string, jwtAudience string) EndpointRouter {
 	return &authEndpoint{
-		service: hs,
+		service:           hs,
+		jwtSigningSecret:  []byte(jwtSigningSecret), // TODO: verify its 32 bytes long
+		jwtAudience:       jwtAudience,              // Verify the incoming JWT token was intended for us
+		cachedGoogleCerts: map[string]string{},      // Optimization
 	}
 }
 
@@ -65,7 +71,7 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 		return newBadRequestErr("not a valid Google JWT").Wrap(err)
 	}
 
-	gToken, err := parseGoogleJWTToken(loginToken.Token)
+	gToken, err := a.parseGoogleJWTToken(loginToken.Token)
 	if err != nil {
 		return newBadRequestErr("could not validate Google JWT").Wrap(err)
 	}
@@ -90,12 +96,8 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 	// Declare the token with the algorithm used for signing, and the claims
 	habitzToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// TODO: Pass in secret to auth service
-	// Dont worry, this is not a real secret
-	jwtKey := []byte("QvlzGkH1ZGD4Riw4eW2jyQR16pAgDtzd")
-
 	// Create the new JWT string
-	tokenString, err := habitzToken.SignedString(jwtKey) // Symmetric signing, 32 bytes
+	tokenString, err := habitzToken.SignedString(a.jwtSigningSecret)
 	if err != nil {
 		// If there is an error in creating the JWT return an internal server error
 		return newBadRequestErr("could not sign habitz JWT").Wrap(err)
@@ -110,15 +112,14 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func parseGoogleJWTToken(tokenString string) (*googleClaims, error) {
+func (a *authEndpoint) parseGoogleJWTToken(tokenString string) (*googleClaims, error) {
 	claimsStruct := googleClaims{}
 
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&claimsStruct,
 		func(token *jwt.Token) (interface{}, error) {
-			// TODO: Dont download this key everytime someone logs in
-			pem, err := getGooglePublicKey(fmt.Sprintf("%s", token.Header["kid"]))
+			pem, err := a.getGooglePublicKey(fmt.Sprintf("%s", token.Header["kid"]))
 			if err != nil {
 				return nil, err
 			}
@@ -143,7 +144,7 @@ func parseGoogleJWTToken(tokenString string) (*googleClaims, error) {
 	}
 
 	// TODO: Pass Google App ClientID into Auth service
-	if claims.Audience != "216495932865-4c559i17qgkvirqerca8uga7s9pi700f.apps.googleusercontent.com" {
+	if claims.Audience != a.jwtAudience {
 		return &googleClaims{}, errors.New("aud is invalid")
 	}
 
@@ -155,7 +156,13 @@ func parseGoogleJWTToken(tokenString string) (*googleClaims, error) {
 }
 
 // From: https://blog.boot.dev/golang/how-to-implement-sign-in-with-google-in-golang/
-func getGooglePublicKey(keyID string) (string, error) {
+func (a *authEndpoint) getGooglePublicKey(keyID string) (string, error) {
+
+	// Check cache first
+	if key, ok := a.cachedGoogleCerts[keyID]; ok {
+		return key, nil
+	}
+
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v1/certs")
 	if err != nil {
 		return "", err
@@ -174,5 +181,8 @@ func getGooglePublicKey(keyID string) (string, error) {
 	if !ok {
 		return "", errors.New("key not found")
 	}
+
+	// Cache key
+	a.cachedGoogleCerts[keyID] = key
 	return key, nil
 }
