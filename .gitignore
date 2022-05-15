@@ -2,3 +2,4 @@
 *.sqlite
 *.tar.gz
 vendor/*
+secrets.md

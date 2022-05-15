@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    </div>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>New Habit</title>
+    <meta name="description" content="Create new Habit">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <div id="g_id_onload" data-client_id="216495932865-4c559i17qgkvirqerca8uga7s9pi700f.apps.googleusercontent.com" data-callback="onSignIn">
+
+</head>
+
+<body>
+    <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <!-- <div class="g-signin2" data-onsuccess="onSignIn">Login with google</div> -->
+    <div class="g_id_signin" data-type="standard">Login With Google</div>
+</body>
+<script>
+    function onSignIn(googleUser) {
+            // console.log(googleUser.credential) 
+            
+            // Transmit crendential to backend
+            // On Success, move to /today
+            // Prepare request
+            var request = new XMLHttpRequest();
+            var url = "/auth/google";
+
+            request.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log("Habitz token: " + request.response)
+                    document.location.href = "/today";
+                }
+            };
+
+            body = {
+                "token": googleUser.credential                
+            }
+
+            request.open("POST", url);
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.send(JSON.stringify(body));
+        }
+</script>
+</html>

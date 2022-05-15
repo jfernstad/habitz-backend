@@ -8,7 +8,7 @@ type HabitzService struct{}
 
 func (m *HabitzService) Users() ([]string, error)     { return nil, nil }
 func (m *HabitzService) CreateUser(name string) error { return nil }
-func (m *HabitzService) Templates(user, weekday string) ([]*internal.HabitTemplate, error) {
+func (m *HabitzService) Templates(user, weekday string) ([]*internal.WeekHabitTemplates, error) {
 	return nil, nil
 }
 func (m *HabitzService) CreateTemplate(user, weekday, habit string) error { return nil }

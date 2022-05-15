@@ -44,16 +44,25 @@ func main() {
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
+	authEndpoint := endpoints.NewAuthEndpoint(habitzService)
 
 	r := endpoints.NewRouter()
 
 	r.Use(middleware.Logger)
 
+	// API
 	r.Route("/api/habitz", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", habitzEndpoint.Routes())
 	})
 
+	// AUTH
+	r.Route("/auth", func(v chi.Router) {
+		v.Use(cors.Handler)
+		v.Mount("/", authEndpoint.Routes())
+	})
+
+	// HTML
 	r.Route("/", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", wwwEndpoint.Routes())
