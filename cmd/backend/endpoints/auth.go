@@ -101,14 +101,6 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 		return newBadRequestErr("could not sign habitz JWT").Wrap(err)
 	}
 
-	// Finally, we set the client cookie for "token" as the JWT we just generated
-	// we also set an expiry time which is the same as the token itself
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
-
 	resp := token{
 		Token: tokenString,
 	}

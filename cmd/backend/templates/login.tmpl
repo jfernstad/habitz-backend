@@ -24,6 +24,39 @@
     <div class="g_id_signin" data-type="standard">Login With Google</div>
 </body>
 <script>
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+    };
+
+    window.onload = function(){
+        // Check if the cookie exist, if so, go directly to /today
+        console.log('Cookie: '+document.cookie.match(/^(.*;)?\s*token\s*=\s*[^;]+(.*)?$/))
+
+        session = localStorage.getItem("habitz-token")
+        console.log('LocalStorage token:' + session)
+
+        // If we have a JWT token in localStorage
+        // If it has expired, remove it from localStorage
+        // If not, move on to /today
+        if (session != null){
+            claims = parseJwt(session)
+
+            // CHeck for expiration
+            if (Date.now() >= claims.exp * 1000) {
+                console.log("Habitz-token did expire, removing from localStorage")
+                localStorage.removeItem("habitz-token")
+            }else{
+                console.log("Token is valid, moving on")
+                document.location.href = '/today'
+            }
+        }
+    };
     function onSignIn(googleUser) {
             // console.log(googleUser.credential) 
             
@@ -36,6 +69,10 @@
             request.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
                     console.log("Habitz token: " + request.response)
+
+                    // Backend returned a token, store it
+                    rsp = JSON.parse(request.response)
+                    localStorage.setItem("habitz-token", rsp.token)
                     document.location.href = "/today";
                 }
             };

@@ -25,13 +25,22 @@ func (ww *www) Routes() chi.Router {
 	router := NewRouter()
 
 	router.Route("/", func(r chi.Router) {
-		r.Get("/", ErrorHandler(ww.login))
+		r.Get("/", ErrorHandler(ww.index))
+		r.Get("/login", ErrorHandler(ww.login))
 		r.Get("/today", ErrorHandler(ww.todaysHabitz))
 		r.Get("/new", ErrorHandler(ww.newHabit))
 		r.Get("/update/{user}", ErrorHandler(ww.updateHabit))
 	})
 
 	return router
+}
+func (ww *www) index(w http.ResponseWriter, r *http.Request) error {
+	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/index.tmpl")
+	if err != nil {
+		return newInternalServerErr("could not create template").Wrap(err)
+	}
+	writeHTML(w, http.StatusOK, htmlTemplate, nil)
+	return nil
 }
 
 func (ww *www) login(w http.ResponseWriter, r *http.Request) error {
