@@ -7,8 +7,11 @@ type Services struct {
 }
 
 type HabitzServicer interface {
-	Users() ([]string, error)
-	CreateUser(name string) error
+	Users() ([]string, error) // Obsolete?
+	UserWithExternalID(externalID string, provider string) (*User, error)
+
+	CreateUser(name string) error // Obsolete
+	CreateExternalUser(external *ExternalUser) (*User, error)
 
 	Templates(user string) ([]*WeekHabitTemplates, error)
 	WeekdayTemplates(user, weekday string) ([]*WeekdayHabitTemplate, error)

@@ -21,6 +21,10 @@ type authEndpoint struct {
 	cachedGoogleCerts map[string]string
 }
 
+const (
+	AuthProviderGoogle = "google"
+)
+
 type googleClaims struct {
 	jwt.StandardClaims
 	Email         string `json:"email"`
@@ -32,8 +36,8 @@ type googleClaims struct {
 
 type HabitzJWTClaims struct {
 	jwt.StandardClaims
-	Username string `json:"username"`
-	UserID   string `json:"user_id"`
+	Firstname string `json:"firstname"`
+	UserID    string `json:"user_id"`
 }
 
 func NewAuthEndpoint(hs internal.HabitzServicer, jwtSigningSecret string, jwtAudience string) EndpointRouter {
@@ -76,31 +80,37 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 		return newBadRequestErr("could not validate Google JWT").Wrap(err)
 	}
 
-	// TODO:
 	// Is this the first time the user logs in?
-	// If so, create an account, store basic info
-
-	// Create a JWT token for the API
-	// 30 days it last
-	expirationTime := time.Now().Add(30 * 24 * time.Hour)
-
-	claims := &HabitzJWTClaims{
-		Username: gToken.FirstName,
-		UserID:   gToken.Subject,
-		StandardClaims: jwt.StandardClaims{
-			// In JWT, the expiry time is expressed as unix milliseconds
-			ExpiresAt: expirationTime.Unix(),
-		},
+	user, err := a.service.UserWithExternalID(gToken.Subject, AuthProviderGoogle)
+	if err != nil {
+		return newInternalServerErr("could not fetch user").Wrap(err)
 	}
 
-	// Declare the token with the algorithm used for signing, and the claims
-	habitzToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// If so, create an account, store basic info
+	if user == nil {
+		ext := internal.ExternalUser{
+			User: internal.User{
+				Firstname:       gToken.FirstName,
+				Lastname:        gToken.LastName,
+				Email:           gToken.Email,
+				ProfileImageURL: gToken.ProfileImage,
+			},
+			Provider:   AuthProviderGoogle,
+			ExternalID: gToken.Subject,
+		}
 
-	// Create the new JWT string
-	tokenString, err := habitzToken.SignedString(a.jwtSigningSecret)
+		// Lets create the user properly
+		user, err = a.service.CreateExternalUser(&ext)
+		if err != nil {
+			return newInternalServerErr("could not create user").Wrap(err)
+		}
+	}
+
+	// Create a JWT token for the API
+	tokenString, err := newJwtToken(gToken.FirstName, gToken.Subject, a.jwtSigningSecret)
 	if err != nil {
 		// If there is an error in creating the JWT return an internal server error
-		return newBadRequestErr("could not sign habitz JWT").Wrap(err)
+		return newInternalServerErr("could not sign habitz JWT").Wrap(err)
 	}
 
 	resp := token{
@@ -185,4 +195,25 @@ func (a *authEndpoint) getGooglePublicKey(keyID string) (string, error) {
 	// Cache key
 	a.cachedGoogleCerts[keyID] = key
 	return key, nil
+}
+
+func newJwtToken(userID string, firstname string, signingKey []byte) (string, error) {
+
+	expirationTime := time.Now().Add(30 * 24 * time.Hour)
+	claims := &HabitzJWTClaims{
+		Firstname: firstname,
+		UserID:    userID,
+		StandardClaims: jwt.StandardClaims{
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	habitzToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := habitzToken.SignedString(signingKey)
+	if err != nil {
+		return "", err
+	}
+	// Declare the token with the algorithm used for signing, and the claims
+	return tokenString, err
 }

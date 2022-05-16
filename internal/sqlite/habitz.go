@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"strconv"
@@ -15,7 +16,20 @@ import (
 
 const createUserTable = `
 CREATE TABLE IF NOT EXISTS users(
-	name TEXT PRIMARY KEY
+	id text PRIMARY KEY,
+	firstname TEXT,
+	lastname TEXT,
+	email TEXT,
+	profile_image TEXT
+);
+`
+
+const createExternalUserTable = `
+CREATE TABLE IF NOT EXISTS external_users(
+	id text PRIMARY KEY,
+	provider TEXT,
+	user_id TEXT,
+	FOREIGN KEY(user_id) REFERENCES users(id)
 );
 `
 
@@ -54,7 +68,7 @@ func NewHabitzService(db *sqlx.DB, debug bool) internal.HabitzServicer {
 	}
 
 	if err := hs.initSQLDatabase(); err != nil {
-		log.Fatal(err)
+		log.Fatal("initSQLDatabase: ", err)
 	}
 
 	return hs
@@ -62,6 +76,11 @@ func NewHabitzService(db *sqlx.DB, debug bool) internal.HabitzServicer {
 
 func (m *habitzService) initSQLDatabase() error {
 	_, err := m.db.Exec(createUserTable)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.db.Exec(createExternalUserTable)
 	if err != nil {
 		return err
 	}
@@ -85,12 +104,12 @@ func (m *habitzService) log(msg string) {
 	}
 }
 
-func (m *habitzService) Users() ([]string, error) {
+func (m *habitzService) Users() ([]string, error) { // Probably obsolete
 	sql, _, _ := sq.Select("*").From("users").ToSql()
 
 	m.log("Users: " + sql)
 
-	rows, err := m.db.Query(sql)
+	rows, err := m.db.Queryx(sql)
 
 	if err != nil {
 		return nil, err
@@ -99,14 +118,14 @@ func (m *habitzService) Users() ([]string, error) {
 
 	users := []string{}
 
+	user := internal.User{}
 	for rows.Next() {
-		var name string
 
-		if err = rows.Scan(&name); err != nil {
+		if err = rows.StructScan(&user); err != nil {
 			return nil, err
 		}
-		m.log(" - " + name)
-		users = append(users, name)
+		m.log(" - " + user.Firstname)
+		users = append(users, user.Firstname)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -114,6 +133,34 @@ func (m *habitzService) Users() ([]string, error) {
 	}
 
 	return users, nil
+}
+
+func (m *habitzService) UserWithExternalID(externalID string, provider string) (*internal.User, error) {
+
+	extUserQuery, args, _ := sq.Select("user_id").
+		From("external_users").Where(sq.Eq{"id": externalID, "provider": provider}).
+		ToSql()
+
+	userQuery, _, _ := sq.Select("*").
+		From("users").Where("id = ("+extUserQuery+")", args).
+		ToSql()
+
+	m.log("Users: " + userQuery)
+
+	user := internal.User{}
+	row := m.db.QueryRowx(userQuery, args...)
+
+	if err := row.StructScan(&user); err != nil {
+		// Empty rows is not an error (in my mind at least)
+		if err == sql.ErrNoRows {
+			m.log(" NO ROWS ")
+			return nil, nil
+		} else {
+			m.log(" Some other error? ")
+			return nil, row.Err()
+		}
+	}
+	return &user, nil
 }
 
 func (m *habitzService) CreateUser(name string) error {
@@ -129,6 +176,31 @@ func (m *habitzService) CreateUser(name string) error {
 	}
 
 	return nil
+}
+func (m *habitzService) CreateExternalUser(ext *internal.ExternalUser) (*internal.User, error) {
+	newUserID := "u" + internal.NewRandomString(12) // Assume this is unique enough. TODO: Generate ID in database
+	sql, args, _ := sq.Insert("users").
+		Columns("id", "firstname", "lastname", "email", "profile_image").
+		Values(newUserID, ext.Firstname, ext.Lastname, ext.Email, ext.ProfileImageURL).
+		ToSql()
+
+	m.log("CreateExternalUser: " + sql + " >>  " + ext.Firstname)
+
+	if _, err := m.db.Exec(sql, args...); err != nil {
+		return nil, err
+	}
+
+	sql, args, _ = sq.Insert("external_users").
+		Columns("id", "provider", "user_id").
+		Values(ext.ExternalID, ext.Provider, newUserID).ToSql()
+
+	if _, err := m.db.Exec(sql, args...); err != nil {
+		return nil, err
+	}
+
+	// Return new user object
+	ext.User.ID = newUserID
+	return &ext.User, nil
 }
 
 func (m *habitzService) Templates(user string) ([]*internal.WeekHabitTemplates, error) {
