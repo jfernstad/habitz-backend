@@ -12,6 +12,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jfernstad/habitz/web/internal"
+	"github.com/jfernstad/habitz/web/internal/repository"
 )
 
 const createUserTable = `
@@ -118,7 +119,7 @@ func (m *habitzService) Users() ([]string, error) { // Probably obsolete
 
 	users := []string{}
 
-	user := internal.User{}
+	user := repository.User{}
 	for rows.Next() {
 
 		if err = rows.StructScan(&user); err != nil {
@@ -135,7 +136,7 @@ func (m *habitzService) Users() ([]string, error) { // Probably obsolete
 	return users, nil
 }
 
-func (m *habitzService) UserWithExternalID(externalID string, provider string) (*internal.User, error) {
+func (m *habitzService) UserWithExternalID(externalID string, provider string) (*repository.User, error) {
 
 	extUserQuery, args, _ := sq.Select("user_id").
 		From("external_users").Where(sq.Eq{"id": externalID, "provider": provider}).
@@ -147,7 +148,7 @@ func (m *habitzService) UserWithExternalID(externalID string, provider string) (
 
 	m.log("Users: " + userQuery)
 
-	user := internal.User{}
+	user := repository.User{}
 	row := m.db.QueryRowx(userQuery, args...)
 
 	if err := row.StructScan(&user); err != nil {
@@ -177,7 +178,7 @@ func (m *habitzService) CreateUser(name string) error {
 
 	return nil
 }
-func (m *habitzService) CreateExternalUser(ext *internal.ExternalUser) (*internal.User, error) {
+func (m *habitzService) CreateExternalUser(ext *repository.ExternalUser) (*repository.User, error) {
 	newUserID := "u" + internal.NewRandomString(12) // Assume this is unique enough. TODO: Generate ID in database
 	sql, args, _ := sq.Insert("users").
 		Columns("id", "firstname", "lastname", "email", "profile_image").
@@ -203,7 +204,7 @@ func (m *habitzService) CreateExternalUser(ext *internal.ExternalUser) (*interna
 	return &ext.User, nil
 }
 
-func (m *habitzService) Templates(user string) ([]*internal.WeekHabitTemplates, error) {
+func (m *habitzService) Templates(user string) ([]*repository.WeekHabitTemplates, error) {
 	sql, args, _ := sq.Select("name", "weekday", "habit").
 		From("habit_templates").
 		Where(sq.Eq{"name": user}).
@@ -219,10 +220,10 @@ func (m *habitzService) Templates(user string) ([]*internal.WeekHabitTemplates, 
 	}
 	defer rows.Close()
 
-	userTemplates := []*internal.WeekHabitTemplates{}
+	userTemplates := []*repository.WeekHabitTemplates{}
 	for rows.Next() {
-		var tmpl internal.WeekdayHabitTemplate
-		var weekTmpl internal.WeekHabitTemplates
+		var tmpl repository.WeekdayHabitTemplate
+		var weekTmpl repository.WeekHabitTemplates
 
 		if err = rows.StructScan(&tmpl); err != nil {
 			return nil, err
@@ -255,7 +256,7 @@ func (m *habitzService) Templates(user string) ([]*internal.WeekHabitTemplates, 
 
 }
 
-func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*internal.WeekdayHabitTemplate, error) {
+func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*repository.WeekdayHabitTemplate, error) {
 	sql, args, _ := sq.Select("name", "weekday", "habit").
 		From("habit_templates").
 		Where(sq.Eq{"name": user, "weekday": weekday}).
@@ -270,9 +271,9 @@ func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*internal.Week
 	}
 	defer rows.Close()
 
-	userTemplates := []*internal.WeekdayHabitTemplate{}
+	userTemplates := []*repository.WeekdayHabitTemplate{}
 	for rows.Next() {
-		var tmpl internal.WeekdayHabitTemplate
+		var tmpl repository.WeekdayHabitTemplate
 
 		if err = rows.StructScan(&tmpl); err != nil {
 			return nil, err
@@ -332,7 +333,7 @@ func (m *habitzService) RemoveEntry(user, habit string, date time.Time) error {
 	return nil
 }
 
-func (m *habitzService) HabitEntries(user string, date string) ([]*internal.HabitEntry, error) {
+func (m *habitzService) HabitEntries(user string, date string) ([]*repository.HabitEntry, error) {
 	sql, args, _ := sq.Select("*").
 		From("habit_entries").
 		Where(sq.Eq{"name": user, "date": date}).
@@ -347,10 +348,10 @@ func (m *habitzService) HabitEntries(user string, date string) ([]*internal.Habi
 	}
 	defer rows.Close()
 
-	habitEntries := []*internal.HabitEntry{}
+	habitEntries := []*repository.HabitEntry{}
 
 	for rows.Next() {
-		var entry internal.HabitEntry
+		var entry repository.HabitEntry
 
 		if err = rows.StructScan(&entry); err != nil {
 			return nil, err
@@ -368,7 +369,7 @@ func (m *habitzService) HabitEntries(user string, date string) ([]*internal.Habi
 	return habitEntries, nil
 }
 
-func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal.HabitEntry, error) {
+func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*repository.HabitEntry, error) {
 
 	today := internal.Today()
 
@@ -384,7 +385,7 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 	}
 
 	// Retrieve last insert values
-	entry := internal.HabitEntry{}
+	entry := repository.HabitEntry{}
 
 	sql, _, _ = sq.Select("*").
 		From("habit_entries").
@@ -400,7 +401,7 @@ func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*internal
 	return &entry, nil
 }
 
-func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.HabitEntry, error) {
+func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*repository.HabitEntry, error) {
 
 	query := sq.Update("habit_entries").
 		Set("complete", complete)
@@ -425,7 +426,7 @@ func (m *habitzService) UpdateHabitEntry(id int, complete bool) (*internal.Habit
 		Where(sq.Eq{"id": id}).
 		ToSql()
 
-	entry := internal.HabitEntry{}
+	entry := repository.HabitEntry{}
 
 	if err := m.db.QueryRowx(sql, args...).StructScan(&entry); err != nil {
 		return nil, err

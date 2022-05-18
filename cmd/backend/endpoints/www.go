@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jfernstad/habitz/web/internal"
+	"github.com/jfernstad/habitz/web/internal/repository"
 )
 
 type www struct {
@@ -104,7 +105,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		if len(habitz) == 0 {
 			log.Println("No entries for today, lets create them")
 
-			habitz = []*internal.HabitEntry{}
+			habitz = []*repository.HabitEntry{}
 			templates, err := ww.service.WeekdayTemplates(user, weekday)
 			if err != nil {
 				return newInternalServerErr("could not load templates for today").Wrap(err)

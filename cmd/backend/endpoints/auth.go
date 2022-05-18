@@ -11,6 +11,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/golang-jwt/jwt"
 	"github.com/jfernstad/habitz/web/internal"
+	"github.com/jfernstad/habitz/web/internal/auth"
+	"github.com/jfernstad/habitz/web/internal/repository"
 )
 
 type authEndpoint struct {
@@ -32,12 +34,6 @@ type googleClaims struct {
 	FirstName     string `json:"given_name"`
 	LastName      string `json:"family_name"`
 	ProfileImage  string `json:"picture"`
-}
-
-type HabitzJWTClaims struct {
-	jwt.StandardClaims
-	Firstname string `json:"firstname"`
-	UserID    string `json:"user_id"`
 }
 
 func NewAuthEndpoint(hs internal.HabitzServicer, jwtSigningSecret string, jwtAudience string) EndpointRouter {
@@ -88,8 +84,8 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 
 	// If so, create an account, store basic info
 	if user == nil {
-		ext := internal.ExternalUser{
-			User: internal.User{
+		ext := repository.ExternalUser{
+			User: repository.User{
 				Firstname:       gToken.FirstName,
 				Lastname:        gToken.LastName,
 				Email:           gToken.Email,
@@ -200,7 +196,7 @@ func (a *authEndpoint) getGooglePublicKey(keyID string) (string, error) {
 func newJwtToken(userID string, firstname string, signingKey []byte) (string, error) {
 
 	expirationTime := time.Now().Add(30 * 24 * time.Hour)
-	claims := &HabitzJWTClaims{
+	claims := &auth.HabitzJWTClaims{
 		Firstname: firstname,
 		UserID:    userID,
 		StandardClaims: jwt.StandardClaims{
