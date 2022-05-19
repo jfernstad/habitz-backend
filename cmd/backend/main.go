@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jfernstad/habitz/web/cmd/backend/endpoints"
+	"github.com/jfernstad/habitz/web/internal/auth"
 	"github.com/jfernstad/habitz/web/internal/sqlite"
 )
 
@@ -52,10 +53,11 @@ func main() {
 	})
 
 	// habitzService := &mock.HabitzService{}
+	jwtService := auth.NewJWTService([]byte(jwtSigningKey))
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
-	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtSigningKey, googleClientID)
+	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtService, googleClientID)
 
 	r := endpoints.NewRouter()
 

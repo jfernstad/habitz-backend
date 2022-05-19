@@ -3,3 +3,4 @@
 *.tar.gz
 vendor/*
 secrets.md
+*.out

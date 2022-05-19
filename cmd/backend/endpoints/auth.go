@@ -18,8 +18,8 @@ import (
 type authEndpoint struct {
 	DefaultEndpoint
 	service           internal.HabitzServicer
-	jwtSigningSecret  []byte
-	jwtAudience       string
+	jwtSigningService auth.JWTServicer
+	jwtGoogleAudience string
 	cachedGoogleCerts map[string]string
 }
 
@@ -36,12 +36,12 @@ type googleClaims struct {
 	ProfileImage  string `json:"picture"`
 }
 
-func NewAuthEndpoint(hs internal.HabitzServicer, jwtSigningSecret string, jwtAudience string) EndpointRouter {
+func NewAuthEndpoint(hs internal.HabitzServicer, jwtService auth.JWTServicer, jwtGoogleAudience string) EndpointRouter {
 	return &authEndpoint{
 		service:           hs,
-		jwtSigningSecret:  []byte(jwtSigningSecret), // TODO: verify its 32 bytes long
-		jwtAudience:       jwtAudience,              // Verify the incoming JWT token was intended for us
-		cachedGoogleCerts: map[string]string{},      // Optimization
+		jwtSigningService: jwtService,
+		jwtGoogleAudience: jwtGoogleAudience,   // Verify the incoming JWT token was intended for us
+		cachedGoogleCerts: map[string]string{}, // Optimization
 	}
 }
 
@@ -102,8 +102,18 @@ func (a *authEndpoint) google(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
+	// Our Habitz claims
+	claims := &auth.HabitzJWTClaims{
+		Firstname: gToken.FirstName,
+		StandardClaims: jwt.StandardClaims{
+			Subject: user.ID,
+		},
+	}
+
+	expirationTime := time.Now().Add(30 * 24 * time.Hour) // Generous 30 days expiration
+
 	// Create a JWT token for the API
-	tokenString, err := newJwtToken(gToken.FirstName, gToken.Subject, a.jwtSigningSecret)
+	tokenString, err := a.jwtSigningService.NewToken(claims, &expirationTime)
 	if err != nil {
 		// If there is an error in creating the JWT return an internal server error
 		return newInternalServerErr("could not sign habitz JWT").Wrap(err)
@@ -150,7 +160,7 @@ func (a *authEndpoint) parseGoogleJWTToken(tokenString string) (*googleClaims, e
 	}
 
 	// TODO: Pass Google App ClientID into Auth service
-	if claims.Audience != a.jwtAudience {
+	if claims.Audience != a.jwtGoogleAudience {
 		return &googleClaims{}, errors.New("aud is invalid")
 	}
 
@@ -191,25 +201,4 @@ func (a *authEndpoint) getGooglePublicKey(keyID string) (string, error) {
 	// Cache key
 	a.cachedGoogleCerts[keyID] = key
 	return key, nil
-}
-
-func newJwtToken(userID string, firstname string, signingKey []byte) (string, error) {
-
-	expirationTime := time.Now().Add(30 * 24 * time.Hour)
-	claims := &auth.HabitzJWTClaims{
-		Firstname: firstname,
-		UserID:    userID,
-		StandardClaims: jwt.StandardClaims{
-			// In JWT, the expiry time is expressed as unix milliseconds
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	habitzToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := habitzToken.SignedString(signingKey)
-	if err != nil {
-		return "", err
-	}
-	// Declare the token with the algorithm used for signing, and the claims
-	return tokenString, err
 }
