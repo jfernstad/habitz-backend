@@ -11,3 +11,9 @@ func ErrorHandler(handler WebserviceHandler) http.HandlerFunc {
 		handler.ServeHTTP(w, r)
 	}
 }
+
+func JWTValidation(handler WebserviceHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(w, r)
+	}
+}

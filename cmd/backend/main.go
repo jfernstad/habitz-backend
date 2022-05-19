@@ -13,10 +13,22 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jfernstad/habitz/web/cmd/backend/endpoints"
+	"github.com/jfernstad/habitz/web/internal/auth"
 	"github.com/jfernstad/habitz/web/internal/sqlite"
 )
 
 func main() {
+
+	// Read configuration from environment
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if googleClientID == "" {
+		googleClientID = "216495932865-4c559i17qgkvirqerca8uga7s9pi700f.apps.googleusercontent.com"
+	}
+
+	jwtSigningKey := os.Getenv("JWT_SIGNING_KEY")
+	if jwtSigningKey == "" {
+		jwtSigningKey = "THIS_IS_ONLY_A_DEMO_KEY_NOT_REAL"
+	}
 
 	dbFile := os.Getenv("SQLITE_DB")
 	if dbFile == "" {
@@ -41,19 +53,29 @@ func main() {
 	})
 
 	// habitzService := &mock.HabitzService{}
+	jwtService := auth.NewJWTService([]byte(jwtSigningKey))
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
+	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtService, googleClientID)
 
 	r := endpoints.NewRouter()
 
 	r.Use(middleware.Logger)
 
+	// API
 	r.Route("/api/habitz", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", habitzEndpoint.Routes())
 	})
 
+	// AUTH
+	r.Route("/auth", func(v chi.Router) {
+		v.Use(cors.Handler)
+		v.Mount("/", authEndpoint.Routes())
+	})
+
+	// HTML
 	r.Route("/", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", wwwEndpoint.Routes())

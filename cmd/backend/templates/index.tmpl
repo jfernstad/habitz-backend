@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>New Habit</title>
+    <meta name="description" content="Create new Habit">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        a:link {
+            text-decoration: none;
+        }
+
+        .row {
+            /* height: 50px; */
+            padding: 10px;
+        }
+
+        input[type=text] {
+            height: 60px;
+            width: 100%;
+            padding: 6px;
+            margin-top: 8px;
+            font-size: 36px;
+            border: 2px solid black;
+        }
+
+        button {
+            float: none;
+            display: block;
+            text-align: center;
+            width: 100%;
+            margin: 0;
+            padding: 14px;
+            font-size: 36px;
+        }
+
+        /* Clear floats after the columns */
+        .row:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .headline {
+            padding: 16px;
+            font-size: 64px;
+            width: 100%;
+            text-align: center;
+            font-family: Roboto;
+            background-color: #DDDDDD;
+        }
+
+        /* Customize the label (the container) */
+        .container {
+            display: block;
+            position: relative;
+            padding-left: 80px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 36px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Hide the browser's default checkbox */
+        .container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        /* On mouse-over, add a grey background color */
+        /* .container:hover input~.checkmark {
+            background-color: #ccc;
+        } */
+
+        /* When the checkbox is checked, add a blue background */
+        .container input:checked~.checkmark {
+            background-color: #2196F3;
+        }
+
+        /* Create the checkmark/indicator (hidden when not checked) */
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        /* Show the checkmark when checked */
+        .container input:checked~.checkmark:after {
+            display: block;
+        }
+
+        /* Create a custom checkbox */
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 48px;
+            width: 48px;
+            font-size: 48px;
+            background-color: #eee;
+        }
+
+        /* Style the checkmark/indicator */
+        .container .checkmark:after {
+            left: 13px;
+            top: 3px;
+            width: 15px;
+            height: 30px;
+            border: solid white;
+            border-width: 0 6px 6px 0;
+            -webkit-transform: rotate(45deg);
+            -ms-transform: rotate(45deg);
+            transform: rotate(45deg);
+        }
+    </style>
+</head>
+
+<body>
+    <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <div class="headline"><a href="/">Welcome to My Habitz</a></div>
+    <form>
+        <div class="row">
+            <button type="button" onclick="window.location.href='/login'">To the app!</button>
+        </div>
+    </form>
+</body>
+
+</html>

@@ -8,16 +8,54 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jfernstad/habitz/web/internal"
+	"github.com/jfernstad/habitz/web/internal/repository"
 )
 
 type www struct {
 	DefaultEndpoint
 	service internal.HabitzServicer
+	// HTML Templates
+	indexTemplate    *template.Template
+	loginTemplate    *template.Template
+	todayTemplate    *template.Template
+	newTemplate      *template.Template
+	scheduleTemplate *template.Template
 }
 
 func NewWWWEndpoint(hs internal.HabitzServicer) EndpointRouter {
+	// Load HTML templates
+	indexTmpl, err := template.ParseFiles("./cmd/backend/templates/index.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
+	loginTmpl, err := template.ParseFiles("./cmd/backend/templates/login.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
+	todayTmpl, err := template.ParseFiles("./cmd/backend/templates/today.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
+	newTmpl, err := template.ParseFiles("./cmd/backend/templates/new.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
+	scheduleTmpl, err := template.ParseFiles("./cmd/backend/templates/schedule.tmpl")
+	if err != nil {
+		panic(err)
+	}
+
 	return &www{
-		service: hs,
+		service:          hs,
+		indexTemplate:    indexTmpl,
+		loginTemplate:    loginTmpl,
+		todayTemplate:    todayTmpl,
+		newTemplate:      newTmpl,
+		scheduleTemplate: scheduleTmpl,
 	}
 }
 
@@ -25,21 +63,26 @@ func (ww *www) Routes() chi.Router {
 	router := NewRouter()
 
 	router.Route("/", func(r chi.Router) {
-		r.Get("/", ErrorHandler(ww.todaysHabitz))
+		r.Get("/", ErrorHandler(ww.index))
+		r.Get("/login", ErrorHandler(ww.login))
+		r.Get("/today", ErrorHandler(ww.todaysHabitz))
 		r.Get("/new", ErrorHandler(ww.newHabit))
 		r.Get("/update/{user}", ErrorHandler(ww.updateHabit))
 	})
 
 	return router
 }
+func (ww *www) index(w http.ResponseWriter, r *http.Request) error {
+	writeHTML(w, http.StatusOK, ww.indexTemplate, nil)
+	return nil
+}
+
+func (ww *www) login(w http.ResponseWriter, r *http.Request) error {
+	writeHTML(w, http.StatusOK, ww.loginTemplate, nil)
+	return nil
+}
 
 func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
-
-	// Load the template
-	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/today.tmpl")
-	if err != nil {
-		return newInternalServerErr("could not create template").Wrap(err)
-	}
 
 	// Load habits for all users
 	allUsers, err := ww.service.Users()
@@ -62,7 +105,7 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		if len(habitz) == 0 {
 			log.Println("No entries for today, lets create them")
 
-			habitz = []*internal.HabitEntry{}
+			habitz = []*repository.HabitEntry{}
 			templates, err := ww.service.WeekdayTemplates(user, weekday)
 			if err != nil {
 				return newInternalServerErr("could not load templates for today").Wrap(err)
@@ -101,17 +144,12 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 	}
 	// Load the data into the template
 
-	writeHTML(w, http.StatusOK, htmlTemplate, states)
+	writeHTML(w, http.StatusOK, ww.todayTemplate, states)
 	return nil
 }
 
 func (ww *www) newHabit(w http.ResponseWriter, r *http.Request) error {
-	// Load the template
-	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/new.tmpl")
-	if err != nil {
-		return newInternalServerErr("could not create template").Wrap(err)
-	}
-	writeHTML(w, http.StatusOK, htmlTemplate, nil)
+	writeHTML(w, http.StatusOK, ww.newTemplate, nil)
 	return nil
 }
 
@@ -122,13 +160,10 @@ func (ww *www) updateHabit(w http.ResponseWriter, r *http.Request) error {
 		return newBadRequestErr("missing user")
 	}
 
-	// Load the template
-	htmlTemplate, err := template.ParseFiles("./cmd/backend/templates/schedule.tmpl")
-	if err != nil {
-		return newInternalServerErr("could not create template").Wrap(err)
-	}
-
 	userHabitz, err := ww.service.Templates(user)
+	if err != nil {
+		return newInternalServerErr("could not find user schedule").Wrap(err)
+	}
 
 	type wd struct {
 		Name    string
@@ -169,6 +204,6 @@ func (ww *www) updateHabit(w http.ResponseWriter, r *http.Request) error {
 		state = append(state, &s)
 	}
 
-	writeHTML(w, http.StatusOK, htmlTemplate, state)
+	writeHTML(w, http.StatusOK, ww.scheduleTemplate, state)
 	return nil
 }

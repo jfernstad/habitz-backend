@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jfernstad/habitz/web/internal"
+	"github.com/jfernstad/habitz/web/internal/repository"
 )
 
 type habitz struct {
@@ -22,8 +23,8 @@ func NewHabitzEndpoint(hs internal.HabitzServicer) EndpointRouter {
 }
 
 type habitState struct {
-	Name   string                 `json:"name"`
-	Habitz []*internal.HabitEntry `json:"habitz"`
+	Name   string                   `json:"name"`
+	Habitz []*repository.HabitEntry `json:"habitz"`
 }
 
 func (h *habitz) Routes() chi.Router {
@@ -51,7 +52,7 @@ func (h *habitz) loadUsers(w http.ResponseWriter, r *http.Request) error {
 
 func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) error {
 
-	ht := internal.WeekHabitTemplates{}
+	ht := repository.WeekHabitTemplates{}
 	if err := json.NewDecoder(r.Body).Decode(&ht); err != nil {
 		return newBadRequestErr("invalid input").Wrap(err)
 	}
@@ -98,7 +99,7 @@ func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) err
 
 func (h *habitz) deleteHabit(w http.ResponseWriter, r *http.Request) error {
 
-	ht := internal.WeekdayHabitTemplate{}
+	ht := repository.WeekdayHabitTemplate{}
 	if err := json.NewDecoder(r.Body).Decode(&ht); err != nil {
 		return newBadRequestErr("invalid input").Wrap(err)
 	}
@@ -143,7 +144,7 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 		if len(habitz) == 0 {
 			log.Println("No entries for today, lets create them")
 
-			habitz = []*internal.HabitEntry{}
+			habitz = []*repository.HabitEntry{}
 			templates, err := h.service.WeekdayTemplates(user, weekday)
 			if err != nil {
 				return newInternalServerErr("could not load templates for today").Wrap(err)

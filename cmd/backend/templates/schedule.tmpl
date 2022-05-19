@@ -219,7 +219,7 @@
 </head>
 
 <body>
-    <div class="headline"><a href="/">Schedule</a></div>
+    <div class="headline"><a href="/today">Schedule</a></div>
     <form>
         <div class="calendar">
             <ul class="weekdays">
@@ -253,6 +253,9 @@
                 {{ end }}
             </ol>
 
+        </div>
+        <div class="row">
+            <button type="button" onclick="window.location.href='/today'">Back</button>
         </div>
     </form>
     <script async defer>

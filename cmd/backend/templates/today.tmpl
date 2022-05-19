@@ -11,6 +11,7 @@
     <title>Habitz</title>
     <meta name="description" content="Your daily Habit tracker">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="1800">
 
     <style>
         * {
@@ -234,11 +235,6 @@
             request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             request.send(JSON.stringify(body));
         }
-        // Reload to get new data
-        setTimeout(function () {
-            location.reload();
-        }, 1800 * 1000); // Every 30 mins
-        openFullscreen();
     </script>
 </body>
 
