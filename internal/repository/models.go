@@ -5,20 +5,20 @@ import (
 )
 
 type WeekdayHabitTemplate struct {
-	Name    string `json:"name" db:"name"`
+	UserID  string `json:"user_id" db:"user_id"`
 	Weekday string `json:"weekday" db:"weekday"`
 	Habit   string `json:"habit" db:"habit"`
 }
 
 type WeekHabitTemplates struct {
-	Name     string   `json:"name" db:"name"`
+	UserID   string   `json:"user_id" db:"user_id"`
 	Weekdays []string `json:"weekdays" db:"weekdays"`
 	Habit    string   `json:"habit" db:"habit"`
 }
 
 type HabitEntry struct {
 	ID         int        `json:"id" db:"id"`
-	Name       string     `json:"name,omitempty" db:"name"`
+	UserID     string     `json:"user_id" db:"user_id"`
 	Weekday    string     `json:"weekday" db:"weekday"`
 	Habit      string     `json:"habit" db:"habit"`
 	Complete   bool       `json:"complete" db:"complete"`

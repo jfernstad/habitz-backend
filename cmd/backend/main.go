@@ -55,16 +55,17 @@ func main() {
 	// habitzService := &mock.HabitzService{}
 	jwtService := auth.NewJWTService([]byte(jwtSigningKey))
 	habitzService := sqlite.NewHabitzService(db, true)
-	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
+	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService, jwtService)
 	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService, googleClientID)
 	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtService, googleClientID)
 
 	r := endpoints.NewRouter()
 
 	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
 
 	// API
-	r.Route("/api/habitz", func(v chi.Router) {
+	r.Route("/v1", func(v chi.Router) {
 		v.Use(cors.Handler)
 		v.Mount("/", habitzEndpoint.Routes())
 	})

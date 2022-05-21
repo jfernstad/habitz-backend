@@ -8,6 +8,7 @@ import (
 // Should be used as parameter for Error() errCode
 const (
 	BadRequest          = "BAD_REQUEST"
+	UnAuthorized        = "UNAUTHORIZED"
 	NotFound            = "NOT_FOUND"
 	InternalServerError = "INTERNAL_SERVER_ERROR"
 	MissingParameter    = "MISSING_PARAMETER"
@@ -68,6 +69,14 @@ func (r *errMsg) Wrap(err error) *errMsg {
 func newBadRequestErr(msg string) *errMsg {
 	return &errMsg{
 		HTTPCode: http.StatusBadRequest,
+		Code:     BadRequest,
+		Message:  msg,
+	}
+}
+
+func newNotAuthenticatedErr(msg string) *errMsg {
+	return &errMsg{
+		HTTPCode: http.StatusUnauthorized,
 		Code:     BadRequest,
 		Message:  msg,
 	}

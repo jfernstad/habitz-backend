@@ -180,17 +180,17 @@
     <div class="row">
         {{ range $idx, $user := .States }}
         <div class="column">
-            <div class="user underline"> <a href="/update/{{ $user.Name }}">{{ $user.Name }}</a> </div>
+            <div class="user underline"> <a href="/update/{{ $user.TypeName }}">{{ $user.TypeName }}</a> </div>
             <table>
                 {{ range $hIdx, $habit := $user.Habitz }}
                 <tr>
                     <label class="container habit">{{ $habit.Habit }}
                     {{if $habit.Complete}}
                         <input type="checkbox" id="{{ $habit.ID }}" checked
-                            onchange="updateHabit('{{$user.Name}}',{{ $habit.ID }});">
+                            onchange="updateHabit('{{$user.UserID}}',{{ $habit.ID }});">
                     {{else}}
                         <input type="checkbox" id="{{ $habit.ID }}"
-                            onchange="updateHabit('{{$user.Name}}',{{ $habit.ID }});">
+                            onchange="updateHabit('{{$user.UserID}}',{{ $habit.ID }});">
                     {{end}}
                         <span class="checkmark"></span>
                     </label>
@@ -224,7 +224,7 @@
 
             // Prepare request
             var request = new XMLHttpRequest();
-            var url = "/api/habitz/today";
+            var url = "/v1/today";
 
             request.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
@@ -235,6 +235,77 @@
             request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             request.send(JSON.stringify(body));
         }
+
+/// BASE FUNCTIONS
+
+    function retrieveTodaysHabitz() {
+        // var request = new XMLHttpRequest();
+        // var url = "/v1/today";
+
+        // request.onreadystatechange = function () {
+        //     if (this.readyState == 4 && this.status == 200) {
+        //         console.log(this.responseText);
+        //     }
+        // };
+        // request.open("POST", url);
+        // request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        // request.send(JSON.stringify(body));
+
+        callback = function (status, payload) {
+            console.log("RESPONSE [" + status + "]: " + payload)
+    
+            objs = JSON.parse(payload)
+            var table = document.getElementById("tableID");
+            var rowCount = table.rows.length;
+            var row = table.insertRow(rowCount - 1);
+            row.className = "rowdiv";
+
+        }
+
+        GET("/v1/today", callback)
+    }
+
+    function POST(url, payload, callback, errCallback = null) {
+        var request = new XMLHttpRequest();
+        request.withCredentials = true;
+        request.open("POST", url);
+        request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        request.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("habitz-token"))
+
+        request.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status >= 200 && this.status <= 299) {
+                    callback(this.status, this.responseText)
+                }
+                else if (this.status >= 400 && errCallback != null) {
+                    errCallback(this.status, this.responseText)
+                }
+            }
+        };
+        request.send(JSON.stringify(payload));
+    }
+
+    function GET(url, callback, errCallback = null) {
+        var request = new XMLHttpRequest();
+        request.withCredentials = true;
+        request.open("GET", url);
+        request.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("habitz-token"))
+
+        request.onreadystatechange = function () {
+            if (this.readyState == 4) {
+                if (this.status >= 200 && this.status <= 299) {
+                    callback(this.status, this.responseText)
+                }
+                else if (this.status >= 400 && errCallback != null) {
+                    errCallback(this.status, this.responseText)
+                }
+            }
+        };
+        request.send();
+    }
+
+    /// TESTING
+    retrieveTodaysHabitz()
     </script>
 </body>
 

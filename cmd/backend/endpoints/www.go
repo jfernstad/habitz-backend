@@ -26,27 +26,27 @@ type www struct {
 
 func NewWWWEndpoint(hs internal.HabitzServicer, googleClientID string) EndpointRouter {
 	// Load HTML templates
-	indexTmpl, err := template.ParseFiles("./cmd/backend/templates/index.tmpl")
+	indexTmpl, err := template.ParseFiles("./cmd/backend/html/index.html")
 	if err != nil {
 		panic(err)
 	}
 
-	loginTmpl, err := template.ParseFiles("./cmd/backend/templates/login.tmpl")
+	loginTmpl, err := template.ParseFiles("./cmd/backend/html/login.html")
 	if err != nil {
 		panic(err)
 	}
 
-	todayTmpl, err := template.ParseFiles("./cmd/backend/templates/today.tmpl")
+	todayTmpl, err := template.ParseFiles("./cmd/backend/html/today.html")
 	if err != nil {
 		panic(err)
 	}
 
-	newTmpl, err := template.ParseFiles("./cmd/backend/templates/new.tmpl")
+	newTmpl, err := template.ParseFiles("./cmd/backend/html/new.html")
 	if err != nil {
 		panic(err)
 	}
 
-	scheduleTmpl, err := template.ParseFiles("./cmd/backend/templates/schedule.tmpl")
+	scheduleTmpl, err := template.ParseFiles("./cmd/backend/html/schedule.html")
 	if err != nil {
 		panic(err)
 	}
@@ -130,8 +130,8 @@ func (ww *www) todaysHabitz(w http.ResponseWriter, r *http.Request) error {
 		}
 
 		userHabitz := &habitState{
-			Name:   user,
-			Habitz: habitz,
+			TypeName: user,
+			Habitz:   habitz,
 		}
 		allHabitz = append(allHabitz, userHabitz)
 	}

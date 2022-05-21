@@ -36,17 +36,17 @@ CREATE TABLE IF NOT EXISTS external_users(
 
 const createHabitTemplateTable = `
 CREATE TABLE IF NOT EXISTS habit_templates (
-	name TEXT,
+	user_id text,
 	weekday TEXT,
 	habit TEXT,
-	PRIMARY KEY (name, weekday, habit)
+	PRIMARY KEY (user_id, weekday, habit)
 ) WITHOUT ROWID;
 `
 
 const createEntryTable = `
 CREATE TABLE IF NOT EXISTS habit_entries(
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	name TEXT,
+	user_id text,
 	weekday TEXT,
 	date TEXT,
 	habit TEXT,
@@ -164,20 +164,6 @@ func (m *habitzService) UserWithExternalID(externalID string, provider string) (
 	return &user, nil
 }
 
-func (m *habitzService) CreateUser(name string) error {
-
-	sql, args, _ := sq.Insert("users").
-		Columns("name").Values(name).
-		ToSql()
-
-	m.log("CreateUser: " + sql + " >>  " + name)
-
-	if _, err := m.db.Exec(sql, args...); err != nil {
-		return err
-	}
-
-	return nil
-}
 func (m *habitzService) CreateExternalUser(ext *repository.ExternalUser) (*repository.User, error) {
 	newUserID := "u" + internal.NewRandomString(12) // Assume this is unique enough. TODO: Generate ID in database
 	sql, args, _ := sq.Insert("users").
@@ -204,14 +190,14 @@ func (m *habitzService) CreateExternalUser(ext *repository.ExternalUser) (*repos
 	return &ext.User, nil
 }
 
-func (m *habitzService) Templates(user string) ([]*repository.WeekHabitTemplates, error) {
-	sql, args, _ := sq.Select("name", "weekday", "habit").
+func (m *habitzService) Templates(userID string) ([]*repository.WeekHabitTemplates, error) {
+	sql, args, _ := sq.Select("user_id", "weekday", "habit").
 		From("habit_templates").
-		Where(sq.Eq{"name": user}).
+		Where(sq.Eq{"user_id": userID}).
 		Suffix("COLLATE NOCASE").
 		ToSql()
 
-	m.log("Templates: " + sql + " >> " + user)
+	m.log("Templates: " + sql + " >> " + userID)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -240,7 +226,7 @@ func (m *habitzService) Templates(user string) ([]*repository.WeekHabitTemplates
 		}
 
 		if !exist {
-			weekTmpl.Name = tmpl.Name
+			weekTmpl.UserID = tmpl.UserID
 			weekTmpl.Habit = tmpl.Habit
 			weekTmpl.Weekdays = []string{tmpl.Weekday}
 			userTemplates = append(userTemplates, &weekTmpl)
@@ -256,13 +242,13 @@ func (m *habitzService) Templates(user string) ([]*repository.WeekHabitTemplates
 
 }
 
-func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*repository.WeekdayHabitTemplate, error) {
-	sql, args, _ := sq.Select("name", "weekday", "habit").
+func (m *habitzService) WeekdayTemplates(userID, weekday string) ([]*repository.WeekdayHabitTemplate, error) {
+	sql, args, _ := sq.Select("user_id", "weekday", "habit").
 		From("habit_templates").
-		Where(sq.Eq{"name": user, "weekday": weekday}).
+		Where(sq.Eq{"user_id": userID, "weekday": weekday}).
 		ToSql()
 
-	m.log("WeekdayTemplates: " + sql + " >> " + user + ", " + weekday)
+	m.log("WeekdayTemplates: " + sql + " >> " + userID + ", " + weekday)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -290,12 +276,12 @@ func (m *habitzService) WeekdayTemplates(user, weekday string) ([]*repository.We
 	return userTemplates, nil
 }
 
-func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
+func (m *habitzService) CreateTemplate(userID, weekday, habit string) error {
 	sql, args, _ := sq.Insert("habit_templates").
-		Columns("name", "weekday", "habit").Values(user, weekday, habit).
+		Columns("user_id", "weekday", "habit").Values(userID, weekday, habit).
 		ToSql()
 
-	m.log("CreateTemplate: " + sql + " >> " + user + ", " + weekday + ", " + habit)
+	m.log("CreateTemplate: " + sql + " >> " + userID + ", " + weekday + ", " + habit)
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return err
@@ -304,12 +290,12 @@ func (m *habitzService) CreateTemplate(user, weekday, habit string) error {
 	return nil
 }
 
-func (m *habitzService) RemoveTemplate(user, weekday, habit string) error {
+func (m *habitzService) RemoveTemplate(userID, weekday, habit string) error {
 	sql, args, _ := sq.Delete("habit_templates").
-		Where(sq.Eq{"name": user, "weekday": weekday, "habit": habit}).
+		Where(sq.Eq{"user_id": userID, "weekday": weekday, "habit": habit}).
 		ToSql()
 
-	m.log("RemoveTemplate: " + sql + " >> " + user + ", " + weekday + ", " + habit)
+	m.log("RemoveTemplate: " + sql + " >> " + userID + ", " + weekday + ", " + habit)
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return err
@@ -318,13 +304,13 @@ func (m *habitzService) RemoveTemplate(user, weekday, habit string) error {
 	return nil
 }
 
-func (m *habitzService) RemoveEntry(user, habit string, date time.Time) error {
+func (m *habitzService) RemoveEntry(userID, habit string, date time.Time) error {
 	shortDate := internal.ShortDate(date)
 	sql, args, _ := sq.Delete("habit_entries").
-		Where(sq.Eq{"name": user, "date": shortDate, "habit": habit}).
+		Where(sq.Eq{"user_id": userID, "date": shortDate, "habit": habit}).
 		ToSql()
 
-	m.log("RemoveEntry: " + sql + " >> " + user + ", " + shortDate + ", " + habit)
+	m.log("RemoveEntry: " + sql + " >> " + userID + ", " + shortDate + ", " + habit)
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return err
@@ -333,13 +319,13 @@ func (m *habitzService) RemoveEntry(user, habit string, date time.Time) error {
 	return nil
 }
 
-func (m *habitzService) HabitEntries(user string, date string) ([]*repository.HabitEntry, error) {
+func (m *habitzService) HabitEntries(userID string, date string) ([]*repository.HabitEntry, error) {
 	sql, args, _ := sq.Select("*").
 		From("habit_entries").
-		Where(sq.Eq{"name": user, "date": date}).
+		Where(sq.Eq{"user_id": userID, "date": date}).
 		ToSql()
 
-	m.log("HabitEntries: " + sql + " >> " + user + ", " + date)
+	m.log("HabitEntries: " + sql + " >> " + userID + ", " + date)
 
 	rows, err := m.db.Queryx(sql, args...)
 
@@ -369,16 +355,16 @@ func (m *habitzService) HabitEntries(user string, date string) ([]*repository.Ha
 	return habitEntries, nil
 }
 
-func (m *habitzService) CreateHabitEntry(user, weekday, habit string) (*repository.HabitEntry, error) {
+func (m *habitzService) CreateHabitEntry(userID, weekday, habit string) (*repository.HabitEntry, error) {
 
 	today := internal.Today()
 
 	sql, args, _ := sq.Insert("habit_entries").
-		Columns("name", "weekday", "habit", "date", "complete").
-		Values(user, weekday, habit, today, 0).
+		Columns("user_id", "weekday", "habit", "date", "complete").
+		Values(userID, weekday, habit, today, 0).
 		ToSql()
 
-	m.log("CreateHabitEntry:" + " >> " + user + ", " + weekday + ", " + habit)
+	m.log("CreateHabitEntry:" + " >> " + userID + ", " + weekday + ", " + habit)
 
 	if _, err := m.db.Exec(sql, args...); err != nil {
 		return nil, err

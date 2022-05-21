@@ -177,13 +177,7 @@
     <script async defer>
         function createHabit() {
             // Validate form
-            user = document.getElementById('user').value;
             habit = document.getElementById('habit').value;
-
-            if (user.length == 0 || habit.length == 0) {
-                console.log("bad input")
-                return
-            }
 
             // Collect checked weekdays
             weekdays = [
@@ -211,7 +205,6 @@
 
             // Prepare body
             body = {
-                "name": user,
                 "habit": habit,
                 "weekdays": weekdays,
             }
@@ -220,15 +213,18 @@
 
             // Prepare request
             var request = new XMLHttpRequest();
-            var url = "/api/habitz/";
+            var url = "/v1/";
+            request.withCredentials = true;
+            request.open("POST", url);
+            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            request.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("habitz-token"))
 
             request.onreadystatechange = function () {
+                console.log("NEW response: "+this.status)
                 if (this.readyState == 4 && this.status == 201) {
                     document.location.href = "/today";
                 }
             };
-            request.open("POST", url);
-            request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             request.send(JSON.stringify(body));
         }
     </script>

@@ -11,6 +11,10 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
+type errHttpResponse struct {
+	errMsg
+	RequestID string `json:"requestId"`
+}
 type EndpointRouter interface {
 	Routes() chi.Router
 }
@@ -76,10 +80,7 @@ func (h WebserviceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Println(msg)
 
-		rsp := struct {
-			errMsg
-			RequestID string `json:"requestId"`
-		}{
+		rsp := errHttpResponse{
 			errMsg:    *msg,
 			RequestID: middleware.GetReqID(r.Context()),
 		}
