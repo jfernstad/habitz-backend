@@ -20,9 +20,11 @@ type www struct {
 	todayTemplate    *template.Template
 	newTemplate      *template.Template
 	scheduleTemplate *template.Template
+
+	googleClientID string
 }
 
-func NewWWWEndpoint(hs internal.HabitzServicer) EndpointRouter {
+func NewWWWEndpoint(hs internal.HabitzServicer, googleClientID string) EndpointRouter {
 	// Load HTML templates
 	indexTmpl, err := template.ParseFiles("./cmd/backend/templates/index.tmpl")
 	if err != nil {
@@ -56,6 +58,7 @@ func NewWWWEndpoint(hs internal.HabitzServicer) EndpointRouter {
 		todayTemplate:    todayTmpl,
 		newTemplate:      newTmpl,
 		scheduleTemplate: scheduleTmpl,
+		googleClientID:   googleClientID,
 	}
 }
 
@@ -78,7 +81,13 @@ func (ww *www) index(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (ww *www) login(w http.ResponseWriter, r *http.Request) error {
-	writeHTML(w, http.StatusOK, ww.loginTemplate, nil)
+	type loginRender struct {
+		GoogleID string
+	}
+	state := loginRender{
+		GoogleID: ww.googleClientID,
+	}
+	writeHTML(w, http.StatusOK, ww.loginTemplate, state)
 	return nil
 }
 

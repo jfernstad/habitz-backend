@@ -1,4 +1,4 @@
-FROM golang:1.13 as builder-arm64
+FROM golang:1.18 as builder-arm64
 WORKDIR /go/src/github.com/jfernstad/habitz/web/
 ADD ./internal ./internal
 ADD ./cmd/backend ./cmd/backend
@@ -8,7 +8,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARH=arm64 go build  -ldflags="-extldflags=-static
 
 #FROM alpine:latest
 # FROM frolvlad/alpine-glibc
-FROM arm64v8/alpine:3.13
+FROM arm64v8/alpine:3.15
 RUN apk --no-cache add ca-certificates sqlite
 
 # RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2

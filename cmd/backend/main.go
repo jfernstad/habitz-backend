@@ -56,7 +56,7 @@ func main() {
 	jwtService := auth.NewJWTService([]byte(jwtSigningKey))
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService)
-	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService)
+	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService, googleClientID)
 	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtService, googleClientID)
 
 	r := endpoints.NewRouter()

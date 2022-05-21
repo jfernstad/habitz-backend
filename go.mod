@@ -9,5 +9,6 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jmoiron/sqlx v1.3.1
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
+	github.com/stretchr/testify v1.2.2
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 )
