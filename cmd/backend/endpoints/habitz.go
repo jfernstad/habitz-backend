@@ -26,7 +26,7 @@ func NewHabitzEndpoint(hs internal.HabitzServicer, js auth.JWTServicer) Endpoint
 }
 
 type habitState struct {
-	UserID   string                   `json:"user_id"`
+	// UserID   string                   `json:"user_id"`
 	TypeName string                   `json:"type_name"`
 	Habitz   []*repository.HabitEntry `json:"habitz"`
 }
@@ -76,7 +76,7 @@ func (h *habitz) createHabitTemplate(w http.ResponseWriter, r *http.Request) err
 		// If we're adding a habit for today, make sure we use it today!
 		if weekday == thisWeekday {
 			// Ignore this error, less important
-			h.service.CreateHabitEntry(ht.UserID, weekday, ht.Habit)
+			h.service.CreateHabitEntry(userID, weekday, ht.Habit)
 		}
 	}
 
@@ -109,20 +109,30 @@ func (h *habitz) deleteHabit(w http.ResponseWriter, r *http.Request) error {
 
 func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error {
 
-	firstname := r.Context().Value(ContextFirstnameKey).(string)
+	// firstname := r.Context().Value(ContextFirstnameKey).(string)
 	userID := r.Context().Value(ContextUserIDKey).(string)
 
 	// What day is it?
 	today := internal.Today()
 	weekday := internal.Weekday()
 
-	response := []habitState{}
+	response := struct {
+		UserID     string       `json:"user_id"`
+		Weekday    string       `json:"weekday"`
+		TodaysDate string       `json:"todays_date"`
+		Daily      []habitState `json:"daily"`
+	}{
+		UserID:     userID,
+		Weekday:    weekday,
+		TodaysDate: today,
+	}
+	daily := []habitState{}
 
 	// We can show multiple habitz per day
 	// for multiple types of habitz.
 	// For now it's just a single habit type
-	// with the same name as the user
-	allTypes := []string{firstname}
+	// called `dafault`
+	allTypes := []string{"default"}
 
 	// Try to retrive todays habitz for all users
 	for _, habitType := range allTypes {
@@ -152,13 +162,13 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 
 		if len(habitz) > 0 {
 			userHabitz := habitState{
-				UserID:   userID,
 				TypeName: habitType,
 				Habitz:   habitz,
 			}
-			response = append(response, userHabitz)
+			daily = append(daily, userHabitz)
 		}
 	}
+	response.Daily = daily
 	writeJSON(w, http.StatusOK, &response)
 	return nil
 }

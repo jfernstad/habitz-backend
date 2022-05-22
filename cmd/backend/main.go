@@ -56,7 +56,7 @@ func main() {
 	jwtService := auth.NewJWTService([]byte(jwtSigningKey))
 	habitzService := sqlite.NewHabitzService(db, true)
 	habitzEndpoint := endpoints.NewHabitzEndpoint(habitzService, jwtService)
-	wwwEndpoint := endpoints.NewWWWEndpoint(habitzService, googleClientID)
+	// wwwEndpoint := endpoints.NewWWWEndpoint(habitzService, googleClientID)
 	authEndpoint := endpoints.NewAuthEndpoint(habitzService, jwtService, googleClientID)
 
 	r := endpoints.NewRouter()
@@ -77,10 +77,10 @@ func main() {
 	})
 
 	// HTML
-	r.Route("/", func(v chi.Router) {
-		v.Use(cors.Handler)
-		v.Mount("/", wwwEndpoint.Routes())
-	})
+	// r.Route("/", func(v chi.Router) {
+	// v.Use(cors.Handler)
+	// v.Mount("/", wwwEndpoint.Routes())
+	// })
 	// Ignore this request from browsers
 	r.Get("/favicon.ico", func(rw http.ResponseWriter, r *http.Request) {})
 
