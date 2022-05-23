@@ -37,10 +37,13 @@ func (h *habitz) Routes() chi.Router {
 	router.Use(JWTValidation(h.authService))
 	router.Route("/", func(r chi.Router) {
 		r.Get("/users", ErrorHandler(h.loadUsers))
-		r.Post("/", ErrorHandler(h.createHabitTemplate))
-		r.Delete("/", ErrorHandler(h.deleteHabit))
+
+		r.Get("/schedule", ErrorHandler(h.loadHabitTemplates))
+		r.Post("/schedule", ErrorHandler(h.createHabitTemplate))
+		r.Delete("/schedule", ErrorHandler(h.deleteHabit))
+
 		r.Get("/today", ErrorHandler(h.loadTodaysHabitz))
-		r.Post("/today", ErrorHandler(h.updateTodaysHabitz))
+		r.Patch("/today", ErrorHandler(h.updateTodaysHabitz))
 	})
 
 	return router
@@ -170,6 +173,59 @@ func (h *habitz) loadTodaysHabitz(w http.ResponseWriter, r *http.Request) error 
 	}
 	response.Daily = daily
 	writeJSON(w, http.StatusOK, &response)
+	return nil
+}
+
+type wd struct {
+	Day     string `json:"day"`
+	Enabled bool   `json:"enabled"`
+}
+type habit struct {
+	Habit    string `json:"habit"`
+	Weekdays []*wd  `json:"weekdays"`
+}
+
+func (h *habitz) loadHabitTemplates(w http.ResponseWriter, r *http.Request) error {
+	// firstname := r.Context().Value(ContextFirstnameKey).(string)
+	userID := r.Context().Value(ContextUserIDKey).(string)
+
+	userHabitz, err := h.service.Templates(userID)
+	if err != nil {
+		return newInternalServerErr("could not find user schedule").Wrap(err)
+	}
+
+	weekdays := []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+	schedule := struct {
+		UserID   string   `json:"user_id"`
+		TypeName string   `json:"type_name"`
+		Habitz   []*habit `json:"habitz"`
+	}{
+		UserID:   userID,
+		TypeName: "default", // TODO: allow multiple types: health, etc
+	}
+
+	habitz := []*habit{}
+	for _, uh := range userHabitz {
+		s := habit{
+			Habit:    uh.Habit,
+			Weekdays: make([]*wd, 7),
+		}
+
+		// Remove need to search array
+		enabledDays := map[string]bool{}
+		for _, day := range uh.Weekdays {
+			enabledDays[day] = true
+		}
+
+		// Mark which days this habit is enabled
+		for idx, day := range weekdays {
+			_, enabled := enabledDays[day]
+			s.Weekdays[idx] = &wd{Day: day, Enabled: enabled}
+		}
+		habitz = append(habitz, &s)
+	}
+	schedule.Habitz = habitz
+	writeJSON(w, http.StatusOK, schedule)
 	return nil
 }
 
