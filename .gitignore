@@ -4,3 +4,4 @@
 vendor/*
 secrets.md
 *.out
+*.vscode

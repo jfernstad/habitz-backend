@@ -14,7 +14,6 @@ type HabitzServicer interface {
 	Users() ([]string, error) // Obsolete?
 	UserWithExternalID(externalID string, provider string) (*repository.User, error)
 
-	CreateUser(name string) error // Obsolete
 	CreateExternalUser(external *repository.ExternalUser) (*repository.User, error)
 
 	Templates(user string) ([]*repository.WeekHabitTemplates, error)
