@@ -18,7 +18,6 @@ RUN apk --no-cache add ca-certificates sqlite
 WORKDIR /root/
 RUN mkdir -p cmd/backend/templates
 RUN mkdir data
-COPY --from=builder /go/src/github.com/jfernstad/habitz/web/cmd/backend/templates ./cmd/backend/templates
 COPY --from=builder /go/src/github.com/jfernstad/habitz/web/app .
 
 ENV SQLITE_DB data/habitz.sqlite
